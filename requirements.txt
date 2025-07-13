@@ -2,6 +2,7 @@ streamlit
 google-generativeai
 Pillow
 numpy
+libgl1
 pandas
 pyopengl
 plotly
