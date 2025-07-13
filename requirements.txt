@@ -1,9 +1,9 @@
-# Streamlit for UI
+
 streamlit
 
-# Google Generative AI client library for Gemini
 google-generative-ai
 
-# Pillow for image handling
 pillow
 
+
+python-dotenv
