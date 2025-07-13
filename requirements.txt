@@ -3,6 +3,7 @@ google-generativeai
 Pillow
 numpy
 pandas
+pyopengl
 plotly
 opencv-python
 pydicom
