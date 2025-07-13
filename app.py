@@ -80,3 +80,4 @@ if uploaded_files:
             except Exception as e:
                 st.error(f"❌ Analysis failed: {e}")
 else:
+    st.info("Upload up to four MRI images to begin analysis.")
