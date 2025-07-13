@@ -7,5 +7,3 @@ google-generative-ai
 # Pillow for image handling
 pillow
 
-# python-dotenv in case you wish to manage secrets via .env
-python-dotenv
