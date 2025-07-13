@@ -691,21 +691,47 @@ class UIComponents:
             initial_sidebar_state="expanded"
         )
         
-        # Enhanced CSS for research interface
+        # Enhanced CSS for research interface with dark mode support
         st.markdown("""
         <style>
             .main .block-container {padding-top: 1rem;}
             .stButton>button {width: 100%;}
             .stProgress > div > div > div > div {background-color: #2e86de;}
-            .st-bb {background-color: #f8f9fa;}
-            .st-bc {background-color: #ffffff;}
-            .st-bd {border-color: #dee2e6;}
-            .st-be {color: #212529;}
+            .st-bb {background-color: var(--background-color);}
+            .st-bc {background-color: var(--background-color);}
+            .st-bd {border-color: var(--border-color);}
+            .st-be {color: var(--text-color);}
             .tab-content {padding: 1rem 0;}
             .tab-content h3 {margin-top: 0;}
             .research-tab {padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
-            .research-tab h3 {color: #2c3e50; margin-top: 0;}
-            .research-metric {background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
+            .research-tab h3 {color: var(--title-color); margin-top: 0;}
+            .research-metric {background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
+            
+            /* Dark mode variables */
+            [data-theme="light"] {
+                --background-color: #ffffff;
+                --text-color: #212529;
+                --title-color: #2c3e50;
+                --card-bg: #f8f9fa;
+                --border-color: #dee2e6;
+            }
+            
+            [data-theme="dark"] {
+                --background-color: #0e1117;
+                --text-color: #f8f9fa;
+                --title-color: #f8f9fa;
+                --card-bg: #1a1d23;
+                --border-color: #2d333b;
+            }
+            
+            /* Make sure API key message is visible in dark mode */
+            .stAlert {
+                background-color: transparent !important;
+            }
+            
+            .stAlert div[data-testid="stMarkdownContainer"] p {
+                color: var(--text-color) !important;
+            }
         </style>
         """, unsafe_allow_html=True)
         
