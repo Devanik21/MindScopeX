@@ -430,7 +430,7 @@ class AIAnalysisEngine:
         """Initialize Gemini model"""
         try:
             genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro-vision')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
             logger.info("AI model initialized successfully")
         except Exception as e:
             logger.error(f"Model initialization failed: {e}")
