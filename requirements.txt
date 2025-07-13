@@ -1,9 +1,4 @@
-
 streamlit
-
 google-generative-ai
-
 pillow
-
-
 python-dotenv
