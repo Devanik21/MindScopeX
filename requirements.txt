@@ -1,0 +1,11 @@
+# Streamlit for UI
+streamlit>=1.25.0
+
+# Google Generative AI client library for Gemini
+google-generative-ai>=0.3.0
+
+# Pillow for image handling
+pillow>=9.0.0
+
+# python-dotenv in case you wish to manage secrets via .env
+python-dotenv>=1.0.0
