@@ -683,54 +683,165 @@ class UIComponents:
     
     @staticmethod
     def render_header():
-        """Render application header with research focus"""
+        """Render professional research platform header with dark theme"""
         st.set_page_config(
-            page_title="Advanced Medical Research Platform",
-            page_icon="🔬",
+            page_title="NexusMed AI Research Platform",
+            page_icon="🧪",
             layout="wide",
             initial_sidebar_state="expanded"
         )
         
-        # Enhanced CSS for research interface with dark mode support
+        # Premium dark theme CSS for research scientists
         st.markdown("""
         <style>
-            .main .block-container {padding-top: 1rem;}
-            .stButton>button {width: 100%;}
-            .stProgress > div > div > div > div {background-color: #2e86de;}
-            .st-bb {background-color: var(--background-color);}
-            .st-bc {background-color: var(--background-color);}
-            .st-bd {border-color: var(--border-color);}
-            .st-be {color: var(--text-color);}
-            .tab-content {padding: 1rem 0;}
-            .tab-content h3 {margin-top: 0;}
-            .research-tab {padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
-            .research-tab h3 {color: var(--title-color); margin-top: 0;}
-            .research-metric {background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
-            
-            /* Dark mode variables */
-            [data-theme="light"] {
-                --background-color: #ffffff;
-                --text-color: #212529;
-                --title-color: #2c3e50;
-                --card-bg: #f8f9fa;
-                --border-color: #dee2e6;
+            /* Base Styles */
+            :root {
+                --primary: #6366f1;
+                --primary-dark: #4f46e5;
+                --secondary: #10b981;
+                --accent: #8b5cf6;
+                --background: #0a0f1e;
+                --surface: #111827;
+                --surface-elevated: #1f2937;
+                --text-primary: #f9fafb;
+                --text-secondary: #d1d5db;
+                --border: #374151;
+                --success: #10b981;
+                --warning: #f59e0b;
+                --error: #ef4444;
+                --card-bg: rgba(17, 24, 39, 0.8);
+                --card-border: rgba(75, 85, 99, 0.3);
+                --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
             }
             
-            [data-theme="dark"] {
-                --background-color: #0e1117;
-                --text-color: #f8f9fa;
-                --title-color: #f8f9fa;
-                --card-bg: #1a1d23;
-                --border-color: #2d333b;
+            /* Main Layout */
+            .main .block-container {
+                padding: 1.5rem 2rem 2rem;
+                background: var(--background);
+                color: var(--text-primary);
             }
             
-            /* Make sure API key message is visible in dark mode */
+            /* Typography */
+            h1, h2, h3, h4, h5, h6 {
+                color: var(--text-primary);
+                font-weight: 600;
+                letter-spacing: -0.025em;
+            }
+            
+            /* Buttons */
+            .stButton>button {
+                border: none;
+                border-radius: 8px;
+                padding: 0.6rem 1.25rem;
+                font-weight: 500;
+                transition: all 0.2s;
+                background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                color: white;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+            
+            .stButton>button:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+            
+            /* Cards & Containers */
+            .stTabs [data-baseweb="tab-list"] {
+                gap: 8px;
+                padding: 0 2px;
+            }
+            
+            .stTabs [data-baseweb="tab"] {
+                padding: 0.75rem 1.25rem;
+                border-radius: 8px;
+                transition: all 0.2s;
+                background: var(--surface-elevated);
+                color: var(--text-secondary);
+                border: 1px solid var(--border);
+            }
+            
+            .stTabs [aria-selected="true"] {
+                background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                color: white !important;
+                border-color: var(--primary) !important;
+                box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+            }
+            
+            /* Forms & Inputs */
+            .stTextInput>div>div>input, 
+            .stSelectbox>div>div>div,
+            .stTextArea>div>textarea {
+                background: var(--surface-elevated) !important;
+                border: 1px solid var(--border) !important;
+                color: var(--text-primary) !important;
+                border-radius: 8px !important;
+                padding: 0.5rem 0.75rem !important;
+            }
+            
+            /* Progress & Loading */
+            .stProgress > div > div > div > div {
+                background: linear-gradient(90deg, var(--primary), var(--accent)) !important;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: var(--surface);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--border);
+                border-radius: 4px;
+            }
+            
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--primary);
+            }
+            
+            /* Custom Cards */
+            .research-card {
+                background: var(--card-bg);
+                border: 1px solid var(--card-border);
+                border-radius: 12px;
+                padding: 1.5rem;
+                box-shadow: var(--card-shadow);
+                backdrop-filter: blur(10px);
+                transition: all 0.3s ease;
+            }
+            
+            .research-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+            
+            /* Alerts & Notifications */
             .stAlert {
-                background-color: transparent !important;
+                background: transparent !important;
+                border-left: 4px solid var(--primary);
+                border-radius: 0 8px 8px 0;
             }
             
-            .stAlert div[data-testid="stMarkdownContainer"] p {
-                color: var(--text-color) !important;
+            /* Custom Tabs */
+            .tab-content {
+                padding: 1.5rem 0;
+            }
+            
+            /* Utility Classes */
+            .glass-effect {
+                background: rgba(17, 24, 39, 0.7);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .gradient-text {
+                background: linear-gradient(90deg, var(--primary), var(--accent));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                display: inline-block;
             }
         </style>
         """, unsafe_allow_html=True)
