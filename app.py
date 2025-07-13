@@ -15,8 +15,7 @@ os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'  # If you're working with EXR files
 os.environ['OPENCV_VIDEOIO_DEBUG'] = '0'     # Disable video debug info
 
 # Configure matplotlib to use non-GUI backend
-import matplotlib
-matplotlib.use('Agg')
+
 
 import streamlit as st
 import google.generativeai as genai
