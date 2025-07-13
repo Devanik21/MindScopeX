@@ -43,7 +43,7 @@ if uploaded_files:
         # Display image
         st.subheader(f"Image: {uploaded_file.name}")
         image = Image.open(io.BytesIO(uploaded_file.read()))
-        st.image(image, use_column_width=True)
+        st.image(image, use_container_width=True)
 
         # Call Gemini API for advanced analytics
         with st.spinner("Analyzing image with Gemini..."):
