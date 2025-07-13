@@ -10,12 +10,6 @@ Author: Medical AI Systems
 Version: 2.0.0
 License: MIT
 """
-import os
-os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1'  # If you're working with EXR files
-os.environ['OPENCV_VIDEOIO_DEBUG'] = '0'     # Disable video debug info
-
-# Configure matplotlib to use non-GUI backend
-
 
 import streamlit as st
 import google.generativeai as genai
@@ -764,7 +758,7 @@ class UIComponents:
             "Upload Medical Images",
             type=SUPPORTED_FORMATS,
             accept_multiple_files=True,
-            help=f"Supported formats: {', '.join(SUPPORTED_FORMATS.upper())}"
+            help=f"Supported formats: {', '.join([f.upper() for f in SUPPORTED_FORMATS])}"
         )
         
         if uploaded_files:
