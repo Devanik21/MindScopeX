@@ -50,7 +50,7 @@ if uploaded_files:
             try:
                 # Example image analysis call; adjust features as needed
                 analysis = genai.analyze(
-                    model="gemini-2.5-im-image",
+                    model="gemini-2.5-flash",
                     image=image,
                     features=[
                         "LABEL_DETECTION",
