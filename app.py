@@ -61,21 +61,16 @@ if uploaded_files:
             "3. Medical interpretation helpful for clinicians."
         )
 
-        # Send to Gemini via genai.chat
+        # Send to Gemini via chat.completions.create
         with st.spinner("Analyzing image with Gemini..."):
             try:
-                response = genai.chat(
+                response = genai.chat.completions.create(
                     model="gemini-1.5-flash",
                     messages=[{"author": "user", "content": prompt}]
                 )
                 # Display AI diagnosis
                 st.markdown("### 🧠 AI Diagnosis")
-                # Depending on response structure
-                content = None
-                if hasattr(response, 'last') and hasattr(response.last, 'content'):
-                    content = response.last.content
-                elif 'choices' in response and response['choices']:
-                    content = response['choices'][0]['message']['content']
+                content = response.choices[0].message.content
                 st.write(content)
             except Exception as e:
                 st.error(f"❌ Analysis failed: {e}")
