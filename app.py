@@ -998,7 +998,7 @@ def main():
             "🔍 Search", 
             "📂 Projects", 
             "🧠 AI Assistant", 
-            "🤖 AI Insights",
+            "🦄 AI Insights",
             "📊 Dashboard", 
             "📋 History", 
             "⚙️ Settings"
@@ -1369,7 +1369,7 @@ def main():
                 st.info("Please check your API key and internet connection.")
         
         with tab6:  # AI Insights Tab
-            st.header("🤖 AI Insights")
+            st.header("🦄 AI Insights")
             
             # Check if API key is available
             if not api_key:
