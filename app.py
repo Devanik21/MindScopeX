@@ -688,12 +688,82 @@ class UIComponents:
         st.subheader("🧪 Advanced Research Settings")
         st.caption("Configure your research data sources and collaboration settings")
         
+        # Initialize session state for tabs if not exists
+        if 'active_tab' not in st.session_state:
+            st.session_state.active_tab = "📤 Upload"
+        if 'uploaded_files' not in st.session_state:
+            st.session_state.uploaded_files = []
+        if 'pacs_connected' not in st.session_state:
+            st.session_state.pacs_connected = False
+        if 'db_connected' not in st.session_state:
+            st.session_state.db_connected = False
+        if 'fl_running' not in st.session_state:
+            st.session_state.fl_running = False
+            
         # Create tabs for different data source types
-        tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload", "🏥 PACS", "🔍 Research Database", "🌐 Federated Learning"])
+        tabs = ["📤 Upload", "🏥 PACS", "🔍 Research Database", "🌐 Federated Learning"]
+        active_tab = st.radio("", tabs, index=tabs.index(st.session_state.active_tab), 
+                            label_visibility="collapsed", horizontal=True, 
+                            format_func=lambda x: "")
+        
+        # Add custom CSS for tab styling
+        st.markdown("""
+        <style>
+            .stRadio > div {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                margin-bottom: 1.5rem;
+            }
+            .stRadio > div > label {
+                flex: 1;
+                text-align: center;
+                padding: 0.75rem 0.5rem;
+                border-radius: 8px;
+                background: var(--surface-elevated);
+                border: 1px solid var(--border);
+                transition: all 0.2s;
+                cursor: pointer;
+                margin: 0 !important;
+            }
+            .stRadio > div > label:hover {
+                background: var(--primary);
+                color: white !important;
+            }
+            .stRadio > div > label[data-testid="stMarkdownContainer"] {
+                margin: 0 auto;
+            }
+            .stRadio > div > div[data-testid="stMarkdownContainer"] > p {
+                margin: 0;
+                font-weight: 500;
+            }
+            .stRadio > div > div[role="radiogroup"] > label[data-baseweb="radio"] {
+                margin: 0;
+            }
+            .stRadio > div > div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
+                padding: 0;
+            }
+            .stRadio > div > div[role="radiogroup"] > label[data-baseweb="radio"] > div:nth-child(2) {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Update active tab
+        st.session_state.active_tab = active_tab
+        
+        # Create tab content containers
+        tab1, tab2, tab3, tab4 = st.tabs([""] * 4)
         
         with tab1:
             st.markdown("### Local File Upload")
             st.markdown("Upload medical images and datasets directly from your device")
+            
+            # File uploader with drag and drop support
             uploaded_files = st.file_uploader(
                 "Drag and drop files or click to browse",
                 type=['dcm', 'nii', 'nii.gz', 'nrrd', 'mhd', 'mha', 'jpg', 'jpeg', 'png', 'tiff'],
@@ -701,240 +771,690 @@ class UIComponents:
                 help="Supported formats: DICOM, NIfTI, NRRD, MetaImage, JPG, PNG, TIFF"
             )
             
+            # Update session state with uploaded files
             if uploaded_files:
-                st.success(f"✅ {len(uploaded_files)} file(s) ready for processing")
+                st.session_state.uploaded_files = uploaded_files
                 
-                # Show file details in an expander
-                with st.expander("📋 View selected files"):
-                    for file in uploaded_files:
-                        st.write(f"- {file.name} ({file.size / (1024*1024):.2f} MB)")
+            if st.session_state.uploaded_files:
+                # Show success message with file count
+                file_count = len(st.session_state.uploaded_files)
+                st.success(f"✅ {file_count} file{'s' if file_count > 1 else ''} ready for processing")
                 
-                # Processing options
-                st.markdown("### Processing Options")
-                col1, col2 = st.columns(2)
+                # File details in an expandable section
+                with st.expander("📋 View selected files", expanded=True):
+                    # Group files by type
+                    file_types = {}
+                    for file in st.session_state.uploaded_files:
+                        ext = file.name.split('.')[-1].upper()
+                        if ext not in file_types:
+                            file_types[ext] = []
+                        file_types[ext].append(file)
+                    
+                    # Display files by type
+                    for ext, files in file_types.items():
+                        with st.expander(f"{ext} Files ({len(files)})"):
+                            for file in files:
+                                file_size = file.size / (1024*1024)  # Convert to MB
+                                st.write(f"- **{file.name}** ({file_size:.2f} MB)")
+                
+                # Processing options in a card
+                with st.container():
+                    st.markdown("### Processing Options")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        anonymize = st.toggle("Anonymize DICOM files", value=True,
+                                           help="Remove patient identifiers from DICOM metadata")
+                        convert_to_nifti = st.toggle("Convert to NIfTI format", value=False,
+                                                  help="Convert all images to NIfTI format for consistency")
+                    with col2:
+                        auto_segment = st.toggle("Auto-segment images", value=False,
+                                              help="Automatically segment anatomical structures using AI")
+                        extract_metadata = st.toggle("Extract and store metadata", value=True,
+                                                  help="Extract and store comprehensive image metadata")
+                
+                # Advanced options in a collapsible section
+                with st.expander("⚙️ Advanced Settings"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        resample_resolution = st.number_input("Resample resolution (mm)", 0.1, 10.0, 1.0, 0.1,
+                                                          help="Voxel size for resampling (in mm)")
+                        normalize_intensity = st.checkbox("Normalize intensity", value=True,
+                                                      help="Normalize image intensity values")
+                    with col2:
+                        orientation = st.selectbox("Reorient to", 
+                                               ["RAS", "LAS", "RPI", "LPI", "RAI", "LAI", "RPS", "LPS"],
+                                               help="Reorient images to standard coordinate system")
+                        compress_output = st.checkbox("Compress output", value=True,
+                                                  help="Use lossless compression for output files")
+                
+                # Action buttons
+                col1, col2, col3 = st.columns([1, 1, 2])
                 with col1:
-                    anonymize = st.checkbox("Anonymize DICOM files", value=True)
-                    convert_to_nifti = st.checkbox("Convert to NIfTI format", value=False)
-                with col2:
-                    auto_segment = st.checkbox("Auto-segment images", value=False)
-                    extract_metadata = st.checkbox("Extract and store metadata", value=True)
+                    if st.button("🚀 Process Files", use_container_width=True):
+                        with st.spinner("Processing files..."):
+                            # Initialize progress bar and status
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
+                            
+                            # Simulate processing each file
+                            total_files = len(st.session_state.uploaded_files)
+                            for i, file in enumerate(st.session_state.uploaded_files):
+                                # Update progress
+                                progress = int((i + 1) / total_files * 100)
+                                progress_bar.progress(progress)
+                                status_text.info(f"Processing {i+1} of {total_files}: {file.name}")
+                                
+                                # Simulate processing time
+                                time.sleep(0.5)
+                                
+                                # Process file (placeholder for actual processing logic)
+                                file_ext = file.name.split('.')[-1].lower()
+                                if file_ext in ['dcm', 'dicom']:
+                                    if anonymize:
+                                        # Simulate DICOM anonymization
+                                        time.sleep(0.3)
+                                
+                            # Show completion message
+                            progress_bar.empty()
+                            status_text.success("✅ Processing complete!")
+                            
+                            # Show results in a nice layout
+                            st.balloons()
+                            
+                            # Display processing summary
+                            with st.expander("📊 Processing Summary", expanded=True):
+                                col1, col2, col3 = st.columns(3)
+                                col1.metric("Files Processed", total_files)
+                                col2.metric("Total Size", f"{sum(f.size for f in st.session_state.uploaded_files) / (1024*1024):.2f} MB")
+                                col3.metric("Processing Time", f"{total_files * 0.8:.1f} seconds")
+                                
+                                # Show sample of processed files
+                                st.markdown("### Processed Files")
+                                sample_files = st.session_state.uploaded_files[:3]  # Show first 3 files as sample
+                                for file in sample_files:
+                                    st.code(f"{file.name} - Processed successfully", language="text")
+                                if total_files > 3:
+                                    st.caption(f"+ {total_files - 3} more files processed")
                 
-                # Start processing button
-                if st.button("🚀 Process Files", use_container_width=True):
-                    with st.spinner("Processing files..."):
-                        # Add your file processing logic here
-                        progress_bar = st.progress(0)
-                        for i in range(100):
-                            time.sleep(0.02)  # Simulate processing
-                            progress_bar.progress(i + 1)
-                        st.success("Processing complete!")
+                with col2:
+                    if st.button("🗑️ Clear Files", type="secondary", use_container_width=True):
+                        st.session_state.uploaded_files = []
+                        st.rerun()
+                
+                with col3:
+                    # Add a placeholder for additional actions
+                    st.markdown("""
+                    <div style="display: flex; justify-content: flex-end; align-items: center; height: 100%;">
+                        <span style="color: var(--text-secondary); font-size: 0.9em;">
+                            Ready to process {file_count} file{'s' if file_count > 1 else ''}
+                        </span>
+                    </div>
+                    """.format(file_count=file_count), unsafe_allow_html=True)
         
         with tab2:
             st.markdown("### PACS Integration")
             st.markdown("Connect to your Picture Archiving and Communication System (PACS)")
             
-            # PACS connection form
-            with st.form("pacs_connection"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    pacs_host = st.text_input("PACS Host", "pacs.hospital.org")
-                    pacs_port = st.number_input("Port", 104, 65535, 104)
-                with col2:
-                    pacs_ae_title = st.text_input("AE Title", "MY_PACS")
-                    pacs_use_tls = st.checkbox("Use TLS/SSL", value=True)
-                
-                # Advanced settings expander
-                with st.expander("⚙️ Advanced Settings"):
-                    pacs_timeout = st.number_input("Connection Timeout (seconds)", 5, 300, 30)
-                    pacs_retries = st.number_input("Max Retry Attempts", 1, 10, 3)
-                
-                # Connect button
-                if st.form_submit_button("🔌 Connect to PACS", use_container_width=True):
-                    with st.spinner("Connecting to PACS..."):
-                        try:
-                            # Add your PACS connection logic here
-                            time.sleep(1.5)  # Simulate connection delay
-                            st.success("✅ Successfully connected to PACS")
+            # Connection status indicator
+            connection_status = st.empty()
+            
+            if st.session_state.pacs_connected:
+                with connection_status.container():
+                    st.success("✅ Connected to PACS", icon="✅")
+                    
+                    # Display connection details
+                    with st.expander("🔗 Connection Details", expanded=False):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.metric("PACS Host", st.session_state.pacs_host)
+                            st.metric("AE Title", st.session_state.pacs_ae_title)
+                        with col2:
+                            st.metric("Port", st.session_state.pacs_port)
+                            st.metric("Status", "Active")
+                    
+                    # Disconnect button
+                    if st.button("🔌 Disconnect from PACS", type="secondary"):
+                        st.session_state.pacs_connected = False
+                        st.rerun()
+                    
+                    # Query interface
+                    st.markdown("### Query Studies")
+                    
+                    # Search filters
+                    with st.form("study_query"):
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        with col1:
+                            start_date = st.date_input("From Date", value=datetime.now() - timedelta(days=30))
+                        with col2:
+                            end_date = st.date_input("To Date", value=datetime.now())
+                        with col3:
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            search_clicked = st.form_submit_button("🔍 Search", use_container_width=True)
+                    
+                    # Modality filter
+                    modalities = st.multiselect(
+                        "Filter by Modality",
+                        ["CT", "MR", "US", "CR", "DX", "MG", "XA", "RF", "PT", "NM"],
+                        ["CT", "MR"]
+                    )
+                    
+                    # Search results
+                    if search_clicked or 'pacs_search_performed' in st.session_state:
+                        st.session_state.pacs_search_performed = True
+                        
+                        # Simulate search results
+                        study_data = [
+                            {"Patient ID": f"P{1000 + i}", 
+                             "Patient Name": f"Doe, John {i}",
+                             "Study Date": (datetime.now() - timedelta(days=random.randint(0, 30))).strftime("%Y-%m-%d"),
+                             "Modality": random.choice(["CT", "MR", "US"]),
+                             "Study Description": f"{random.choice(['Brain', 'Chest', 'Abdomen', 'Spine'])} {random.choice(['w/ contrast', 'w/o contrast', ''])}",
+                             "# Images": random.randint(10, 300),
+                             "Status": random.choice(["Completed", "Report Pending", "Verified"])
+                            } for i in range(1, 8)
+                        ]
+                        
+                        # Filter by selected modalities
+                        if modalities:
+                            study_data = [s for s in study_data if s["Modality"] in modalities]
+                        
+                        # Display results in a table
+                        if study_data:
+                            st.dataframe(
+                                study_data,
+                                column_config={
+                                    "Patient ID": "Patient ID",
+                                    "Patient Name": "Patient Name",
+                                    "Study Date": "Study Date",
+                                    "Modality": "Modality",
+                                    "Study Description": "Description",
+                                    "# Images": st.column_config.NumberColumn("# Images"),
+                                    "Status": st.column_config.SelectboxColumn(
+                                        "Status",
+                                        options=["Scheduled", "In Progress", "Completed", "Report Pending", "Verified"],
+                                        width="small"
+                                    )
+                                },
+                                hide_index=True,
+                                use_container_width=True
+                            )
                             
-                            # Show query interface after connection
-                            st.markdown("### Query Studies")
-                            col1, col2, col3 = st.columns([2, 2, 1])
-                            with col1:
-                                start_date = st.date_input("From Date", value=datetime.now() - timedelta(days=30))
-                            with col2:
-                                end_date = st.date_input("To Date", value=datetime.now())
-                            with col3:
-                                st.markdown("<br>", unsafe_allow_html=True)
-                                if st.button("🔍 Search"):
-                                    # Add your study search logic here
-                                    st.info("Searching for studies...")
-                                    
-                        except Exception as e:
-                            st.error(f"❌ Failed to connect to PACS: {str(e)}")
+                            # Action buttons for selected studies
+                            selected_studies = st.multiselect(
+                                "Select studies for download",
+                                [f"{s['Patient ID']} - {s['Study Description']}" for s in study_data]
+                            )
+                            
+                            if selected_studies:
+                                if st.button("⬇️ Download Selected Studies", use_container_width=True):
+                                    with st.spinner("Preparing download..."):
+                                        # Simulate download preparation
+                                        progress_bar = st.progress(0)
+                                        for i in range(100):
+                                            time.sleep(0.02)
+                                            progress_bar.progress(i + 1)
+                                        st.success("✅ Download ready!")
+                                        
+                                        # Create a dummy file for download
+                                        csv = "\n".join(selected_studies)
+                                        st.download_button(
+                                            label="💾 Save DICOM Index",
+                                            data=csv,
+                                            file_name="dicom_index.csv",
+                                            mime="text/csv",
+                                            use_container_width=True
+                                        )
+                        else:
+                            st.info("No studies found matching the criteria.")
+            else:
+                with connection_status.container():
+                    st.warning("🔌 Not connected to PACS", icon="⚠️")
+                
+                # PACS connection form
+                with st.form("pacs_connection"):
+                    st.markdown("#### PACS Connection Settings")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        pacs_host = st.text_input("PACS Host", "pacs.hospital.org", 
+                                               help="Hostname or IP address of the PACS server")
+                        pacs_port = st.number_input("Port", 104, 65535, 104,
+                                                 help="DICOM port (typically 104 for unencrypted, 2762 for encrypted)")
+                    with col2:
+                        pacs_ae_title = st.text_input("AE Title", "MY_PACS",
+                                                   help="Application Entity Title for this client")
+                        pacs_use_tls = st.toggle("Use TLS/SSL", value=True,
+                                              help="Enable encrypted DICOM communication")
+                    
+                    # Advanced settings expander
+                    with st.expander("⚙️ Advanced Settings", expanded=False):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            pacs_timeout = st.number_input("Connection Timeout (seconds)", 5, 300, 30,
+                                                       help="Timeout for PACS operations")
+                        with col2:
+                            pacs_retries = st.number_input("Max Retry Attempts", 1, 10, 3,
+                                                        help="Number of retry attempts for failed operations")
+                    
+                    # Connect button
+                    if st.form_submit_button("🔌 Connect to PACS", use_container_width=True):
+                        with st.spinner("Connecting to PACS..."):
+                            try:
+                                # Simulate connection attempt
+                                time.sleep(1.5)
+                                
+                                # For demo purposes, simulate successful connection
+                                # In a real app, you would validate the connection here
+                                st.session_state.pacs_connected = True
+                                st.session_state.pacs_host = pacs_host
+                                st.session_state.pacs_port = pacs_port
+                                st.session_state.pacs_ae_title = pacs_ae_title
+                                st.session_state.pacs_use_tls = pacs_use_tls
+                                
+                                # Rerun to update the UI
+                                st.rerun()
+                                
+                            except Exception as e:
+                                st.error(f"❌ Failed to connect to PACS: {str(e)}")
+                                st.exception(e)
         
         with tab3:
             st.markdown("### Research Database")
             st.markdown("Access and manage research datasets and annotations")
             
-            # Database selection
-            db_options = ["Select a database", "TCIA", "OpenNeuro", "MIMIC-CXR", "Custom Database"]
-            selected_db = st.selectbox("Select Research Database", db_options)
-            
-            if selected_db != "Select a database":
-                st.info(f"ℹ️ Connecting to {selected_db}...")
+            # Database connection status
+            if st.session_state.get('db_connected', False):
+                st.success(f"✅ Connected to {st.session_state.db_name}")
                 
-                if selected_db == "Custom Database":
-                    # Custom database connection form
-                    with st.form("custom_db_connection"):
-                        db_type = st.selectbox("Database Type", ["MongoDB", "PostgreSQL", "MySQL", "SQLite"])
-                        db_host = st.text_input("Host", "localhost")
-                        db_port = st.number_input("Port", 1, 65535, 27017 if db_type == "MongoDB" else 5432)
-                        db_name = st.text_input("Database Name", "research_db")
-                        db_user = st.text_input("Username")
-                        db_password = st.text_input("Password", type="password")
-                        
-                        if st.form_submit_button("Connect to Database"):
-                            with st.spinner("Connecting..."):
-                                # Add your database connection logic here
-                                time.sleep(1)
-                                st.success("✅ Database connection successful!")
-                else:
-                    # Show available datasets for public databases
-                    st.markdown("### Available Datasets")
-                    
-                    # Simulated dataset search
-                    search_query = st.text_input("Search datasets", placeholder="e.g., lung CT, brain MRI")
-                    
-                    # Example datasets (in a real app, this would come from the database)
-                    example_datasets = [
-                        {"name": "Lung CT Scans", "modality": "CT", "samples": 1_250, "size": "45.7 GB", "license": "CC BY 4.0"},
-                        {"name": "Brain MRI Scans", "modality": "MRI", "samples": 890, "size": "32.1 GB", "license": "CC BY-NC 4.0"},
-                        {"name": "Chest X-Rays", "modality": "X-Ray", "samples": 5_000, "size": "12.3 GB", "license": "CC BY-SA 4.0"},
-                        {"name": "Whole-Body CT Scans", "modality": "CT", "samples": 320, "size": "78.9 GB", "license": "CC BY 3.0"},
-                    ]
-                    
-                    # Filter datasets based on search query
-                    filtered_datasets = [d for d in example_datasets 
-                                      if not search_query or search_query.lower() in d["name"].lower()]
-                    
-                    # Display datasets in a grid
-                    for dataset in filtered_datasets:
-                        with st.expander(f"📁 {dataset['name']}"):
-                            col1, col2, col3, col4 = st.columns(4)
-                            with col1:
-                                st.metric("Modality", dataset["modality"])
-                            with col2:
-                                st.metric("Samples", f"{dataset['samples']:,}")
-                            with col3:
-                                st.metric("Size", dataset["size"])
-                            with col4:
-                                st.metric("License", dataset["license"])
+                # Show connection details
+                with st.expander("🔗 Connection Details"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Database", st.session_state.db_name)
+                        st.metric("Host", st.session_state.db_host)
+                    with col2:
+                        st.metric("Port", st.session_state.db_port)
+                        st.metric("Status", "Active")
+                
+                # Disconnect button
+                if st.button("🔌 Disconnect from Database", type="secondary"):
+                    st.session_state.db_connected = False
+                    st.rerun()
+                
+                # Database operations
+                st.markdown("### Database Operations")
+                
+                # Query interface
+                with st.form("db_query"):
+                    query = st.text_area("Enter your query", "SELECT * FROM studies LIMIT 10")
+                    col1, col2 = st.columns([4, 1])
+                    with col2:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        execute_query = st.form_submit_button("▶️ Execute Query", use_container_width=True)
+                
+                # Execute query on button click
+                if execute_query and query:
+                    with st.spinner("Executing query..."):
+                        try:
+                            # Simulate query execution
+                            time.sleep(1)
                             
-                            # Action buttons
-                            if st.button(f"Preview {dataset['name']}", key=f"preview_{dataset['name']}"):
-                                st.info("Preview functionality would be implemented here")
-                            if st.button(f"Download {dataset['name']}", key=f"dl_{dataset['name']}"):
-                                st.info("Download functionality would be implemented here")
+                            # Generate sample results based on query type
+                            if "SELECT" in query.upper():
+                                # Generate sample data based on query
+                                if "studies" in query.lower():
+                                    # Sample studies data
+                                    studies_data = [
+                                        {"study_id": f"STD{1000 + i}",
+                                         "patient_id": f"PT{2000 + i}",
+                                         "modality": random.choice(["CT", "MR", "US"]),
+                                         "study_date": (datetime.now() - timedelta(days=random.randint(0, 365))).strftime("%Y-%m-%d"),
+                                         "description": f"{random.choice(['Brain', 'Chest', 'Abdomen', 'Spine'])} {random.choice(['w/ contrast', 'w/o contrast', ''])}",
+                                         "num_images": random.randint(10, 500),
+                                         "status": random.choice(["Completed", "In Progress", "Pending Review"])
+                                        } for i in range(10)
+                                    ]
+                                    st.dataframe(studies_data, use_container_width=True)
+                                    st.success(f"Query returned {len(studies_data)} rows")
+                                else:
+                                    st.info("Sample data shown. In a real application, this would execute your query.")
+                            else:
+                                st.warning("This is a read-only demo. Only SELECT queries are simulated.")
+                                
+                        except Exception as e:
+                            st.error(f"Query error: {str(e)}")
+                
+                # Data exploration tabs
+                tab1, tab2, tab3 = st.tabs(["📊 Statistics", "📈 Trends", "🔍 Search"])
+                
+                with tab1:
+                    st.markdown("### Database Statistics")
+                    
+                    # Sample statistics
+                    stats_cols = st.columns(3)
+                    with stats_cols[0]:
+                        st.metric("Total Studies", "1,245", "+12%")
+                    with stats_cols[1]:
+                        st.metric("Total Patients", "892", "+8%")
+                    with stats_cols[2]:
+                        st.metric("Storage Used", "4.7 TB", "+15%")
+                    
+                    # Sample chart
+                    st.markdown("#### Studies by Modality")
+                    modality_data = {"CT": 45, "MR": 30, "US": 15, "X-Ray": 8, "Other": 2}
+                    fig = px.pie(
+                        names=list(modality_data.keys()),
+                        values=list(modality_data.values()),
+                        hole=0.4,
+                        color_discrete_sequence=px.colors.sequential.Plasma
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with tab2:
+                    st.markdown("### Data Trends")
+                    
+                    # Sample time series data
+                    dates = pd.date_range(end=datetime.now(), periods=12, freq='M')
+                    studies_data = {
+                        'Date': dates,
+                        'CT': np.random.randint(50, 200, size=12),
+                        'MR': np.random.randint(30, 150, size=12),
+                        'US': np.random.randint(10, 80, size=12)
+                    }
+                    
+                    # Create line chart
+                    fig = px.line(
+                        studies_data,
+                        x='Date',
+                        y=['CT', 'MR', 'US'],
+                        title='Studies Per Month by Modality',
+                        labels={'value': 'Number of Studies', 'variable': 'Modality'},
+                        color_discrete_sequence=px.colors.qualitative.Plotly
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with tab3:
+                    st.markdown("### Advanced Search")
+                    
+                    # Search form
+                    with st.form("advanced_search"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            search_term = st.text_input("Search term", placeholder="e.g., lung cancer, brain mri")
+                            date_range = st.date_input("Date range", 
+                                                     [datetime.now() - timedelta(days=365), datetime.now()])
+                        with col2:
+                            modalities = st.multiselect("Modality", ["CT", "MR", "US", "X-Ray", "Mammography"], 
+                                                      ["CT", "MR"])
+                            min_images = st.slider("Minimum images per study", 1, 1000, 10)
+                        
+                        # Search button
+                        if st.form_submit_button("🔍 Search", use_container_width=True):
+                            st.info("Search functionality would be implemented here")
+            else:
+                # Database selection
+                st.info("🔌 Please connect to a research database")
+                
+                db_options = ["Select a database", "TCIA", "OpenNeuro", "MIMIC-CXR", "Custom Database"]
+                selected_db = st.selectbox("Select Research Database", db_options)
+                
+                if selected_db != "Select a database":
+                    st.markdown(f"### {selected_db} Connection")
+                    
+                    # Pre-filled credentials for demo purposes
+                    if selected_db == "TCIA":
+                        default_host = "public.cancerimagingarchive.net"
+                        default_port = 27017
+                        default_db = "tcia"
+                    elif selected_db == "OpenNeuro":
+                        default_host = "openneuro.org"
+                        default_port = 27017
+                        default_db = "openneuro"
+                    elif selected_db == "MIMIC-CXR":
+                        default_host = "physionet.org"
+                        default_port = 5432
+                        default_db = "mimic_cxr"
+                    else:  # Custom Database
+                        default_host = "localhost"
+                        default_port = 27017
+                        default_db = "research_db"
+                    
+                    # Connection form
+                    with st.form("db_connection"):
+                        if selected_db == "Custom Database":
+                            db_type = st.selectbox("Database Type", 
+                                                ["MongoDB", "PostgreSQL", "MySQL", "SQLite"])
+                            db_host = st.text_input("Host", default_host)
+                            db_port = st.number_input("Port", 1, 65535, default_port)
+                            db_name = st.text_input("Database Name", default_db)
+                            db_user = st.text_input("Username")
+                            db_password = st.text_input("Password", type="password")
+                        else:
+                            st.info(f"Connecting to public {selected_db} database (read-only)")
+                            db_type = "MongoDB" if selected_db != "MIMIC-CXR" else "PostgreSQL"
+                            db_host = default_host
+                            db_port = default_port
+                            db_name = default_db
+                            db_user = st.text_input("API Key (if required)")
+                            db_password = ""
+                        
+                        # Connect button
+                        if st.form_submit_button("🔌 Connect to Database", use_container_width=True):
+                            with st.spinner("Connecting to database..."):
+                                try:
+                                    # Simulate connection attempt
+                                    time.sleep(1.5)
+                                    
+                                    # For demo purposes, simulate successful connection
+                                    st.session_state.db_connected = True
+                                    st.session_state.db_type = db_type
+                                    st.session_state.db_host = db_host
+                                    st.session_state.db_port = db_port
+                                    st.session_state.db_name = db_name
+                                    st.session_state.db_user = db_user
+                                    
+                                    # Rerun to update the UI
+                                    st.rerun()
+                                    
+                                except Exception as e:
+                                    st.error(f"❌ Failed to connect to database: {str(e)}")
+                                    st.exception(e)
         
         with tab4:
             st.markdown("### Federated Learning")
-            st.markdown("Collaborate on AI model training without sharing sensitive data")
+            st.markdown("Configure and run federated learning experiments across multiple institutions")
             
-            # Federated learning setup
-            st.markdown("#### Setup Federated Learning")
+            # Federated learning configuration
+            st.markdown("#### Experiment Configuration")
             
-            with st.expander("🔧 Configuration", expanded=True):
+            with st.form("fl_config"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    fl_strategy = st.selectbox(
-                        "Federated Learning Strategy",
-                        ["Federated Averaging (FedAvg)", "Federated Dropout", "Federated Learning with Dynamic Regularization"]
+                    model_arch = st.selectbox(
+                        "Model Architecture",
+                        ["3D U-Net", "ResNet-50", "VGG-16", "Custom"],
+                        help="Select a neural network architecture"
                     )
-                    num_rounds = st.number_input("Number of Rounds", 1, 1000, 100)
+                    
+                    # Show custom model config if selected
+                    if model_arch == "Custom":
+                        custom_arch = st.text_area(
+                            "Custom Model Definition (Python)",
+                            "# Define your custom model architecture here\nmodel = tf.keras.Sequential([...])"
+                        )
+                    
+                    # Training parameters
+                    st.markdown("#### Training Parameters")
+                    epochs = st.slider("Number of Epochs", 1, 100, 10)
+                    batch_size = st.slider("Batch Size", 8, 128, 32, 8)
+                    learning_rate = st.number_input(
+                        "Learning Rate", 
+                        min_value=1e-5, 
+                        max_value=1e-1, 
+                        value=1e-3, 
+                        format="%.0e"
+                    )
+                
                 with col2:
-                    clients = st.multiselect(
-                        "Select Participating Clients",
-                        ["Hospital A", "Research Lab B", "Clinic C", "University D", "Medical Center E"],
-                        default=["Hospital A", "Research Lab B"]
+                    # Federated learning settings
+                    st.markdown("#### Federated Settings")
+                    
+                    # Number of clients
+                    num_clients = st.number_input(
+                        "Number of Clients", 
+                        min_value=2, 
+                        max_value=20, 
+                        value=3
                     )
-                    batch_size = st.select_slider("Batch Size", options=[8, 16, 32, 64, 128], value=32)
-            
-            # Model selection
-            st.markdown("#### Model Configuration")
-            model_type = st.radio(
-                "Select Base Model",
-                ["3D U-Net (for volumetric data)", "ResNet-50 (for 2D images)", "Custom Model"],
-                horizontal=True
-            )
-            
-            if model_type == "Custom Model":
-                custom_model = st.file_uploader("Upload Custom Model (PyTorch .pt or .pth)", type=["pt", "pth"])
-                if custom_model:
-                    st.success(f"✅ {custom_model.name} uploaded successfully")
-            
-            # Training parameters
-            st.markdown("#### Training Parameters")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                learning_rate = st.number_input("Learning Rate", 1e-5, 1e-1, 1e-3, format="%f")
-            with col2:
-                loss_function = st.selectbox("Loss Function", ["Dice Loss", "Cross Entropy", "Focal Loss"])
-            with col3:
-                optimizer = st.selectbox("Optimizer", ["Adam", "SGD", "RMSprop"])
-            
-            # Privacy settings
-            st.markdown("#### Privacy Settings")
-            use_dp = st.checkbox("Enable Differential Privacy", value=True)
-            if use_dp:
+                    
+                    # Aggregation strategy
+                    agg_strategy = st.selectbox(
+                        "Aggregation Strategy",
+                        ["FedAvg", "FedProx", "SCAFFOLD", "q-FedAvg"],
+                        help="Federated aggregation algorithm"
+                    )
+                    
+                    # Privacy settings
+                    with st.expander("🔒 Privacy Settings"):
+                        use_dp = st.checkbox("Enable Differential Privacy", value=False)
+                        if use_dp:
+                            noise_multiplier = st.slider("Noise Multiplier", 0.1, 2.0, 0.5, 0.1)
+                            clipping_norm = st.slider("Gradient Clipping Norm", 0.1, 5.0, 1.0, 0.1)
+                    
+                    # Communication settings
+                    with st.expander("📡 Communication Settings"):
+                        comm_rounds = st.number_input(
+                            "Communication Rounds", 
+                            min_value=1, 
+                            max_value=1000, 
+                            value=100
+                        )
+                        
+                        client_fraction = st.slider(
+                            "Client Fraction per Round", 
+                            0.1, 1.0, 0.5, 0.1,
+                            help="Fraction of clients participating in each round"
+                        )
+                
+                # Model configuration
+                st.markdown("#### Model Configuration")
+                
+                # Loss function and metrics
                 col1, col2 = st.columns(2)
                 with col1:
-                    noise_multiplier = st.slider("Noise Multiplier", 0.1, 5.0, 1.0, 0.1)
+                    loss_function = st.selectbox(
+                        "Loss Function",
+                        ["categorical_crossentropy", "binary_crossentropy", "dice_loss", "focal_loss"],
+                        index=0
+                    )
                 with col2:
-                    max_grad_norm = st.slider("Max Gradient Norm", 0.1, 5.0, 1.0, 0.1)
-            
-            # Start federated learning button
-            if st.button("🚀 Start Federated Learning", use_container_width=True):
-                with st.spinner("Initializing federated learning..."):
+                    metrics = st.multiselect(
+                        "Metrics",
+                        ["accuracy", "precision", "recall", "dice_score", "iou"],
+                        default=["accuracy", "dice_score"]
+                    )
+                
+                # Advanced options
+                with st.expander("⚙️ Advanced Options"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        optimizer = st.selectbox(
+                            "Optimizer",
+                            ["Adam", "SGD", "RMSprop", "AdamW"],
+                            index=0
+                        )
+                        
+                        # Early stopping
+                        use_early_stopping = st.checkbox("Use Early Stopping", value=True)
+                        if use_early_stopping:
+                            patience = st.number_input("Patience (epochs)", 1, 50, 10)
+                            min_delta = st.number_input("Min Delta", 0.0001, 0.1, 0.001, 0.0001)
+                    
+                    with col2:
+                        # Learning rate scheduling
+                        use_lr_scheduler = st.checkbox("Use Learning Rate Scheduling", value=False)
+                        if use_lr_scheduler:
+                            scheduler_type = st.selectbox(
+                                "Scheduler Type",
+                                ["ReduceLROnPlateau", "CosineDecay", "ExponentialDecay"],
+                                index=0
+                            )
+                
+                # Start training button
+                if st.form_submit_button("🚀 Start Federated Training", use_container_width=True):
                     # Add your federated learning logic here
+                    st.success("✅ Federated learning experiment started!")
+                    
+                    # Show progress and metrics
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     
+                    # Simulate training progress
                     for i in range(100):
-                        # Simulate training progress
-                        time.sleep(0.05)
+                        # Update progress bar
                         progress = (i + 1) / 100
                         progress_bar.progress(progress)
                         
                         # Update status text
-                        if progress < 0.3:
-                            status_text.text(f"Initializing clients... {int(progress * 100)}%")
-                        elif progress < 0.7:
-                            status_text.text(f"Training in progress... {int(progress * 100)}%")
+                        if i < 30:
+                            status_text.text(f"🔵 Initializing federated learning round {i+1}/{comm_rounds}...")
+                        elif i < 80:
+                            status_text.text(f"🟣 Training in progress (Round {i+1}/{comm_rounds})...")
                         else:
-                            status_text.text(f"Finalizing model... {int(progress * 100)}%")
+                            status_text.text(f"🟢 Finalizing training (Round {i+1}/{comm_rounds})...")
+                        
+                        # Simulate processing time
+                        time.sleep(0.05)
                     
-                    st.success("✅ Federated learning completed successfully!")
+                    # Show completion message
+                    status_text.success("✅ Training completed successfully!")
                     
-                    # Show results
-                    st.balloons()
+                    # Show metrics (simulated)
                     st.markdown("### Training Results")
                     
-                    # Example metrics (in a real app, these would come from the training process)
+                    # Display metrics in columns
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        st.metric("Final Accuracy", "92.4%", "+3.2% from baseline")
+                        st.metric("Final Accuracy", "0.942", "+2.3%")
                     with col2:
-                        st.metric("Loss", "0.124", "-0.08")
+                        st.metric("Dice Score", "0.887", "+3.1%")
                     with col3:
-                        st.metric("Rounds Completed", f"{num_rounds}", "100%")
+                        st.metric("Communication Rounds", f"{comm_rounds}", "100%")
                     
-                    # Download trained model
-                    st.download_button(
-                        label="💾 Download Trained Model",
-                        data=b"This would be the model binary in a real application",
-                        file_name="federated_model.pt",
-                        mime="application/octet-stream"
+                    # Show model performance charts
+                    st.markdown("#### Model Performance")
+                    
+                    # Create sample performance data
+                    epochs_list = list(range(1, epochs + 1))
+                    train_accuracy = [min(0.8 * (1 - np.exp(-0.3 * x)) + 0.2 * np.random.random() * 0.1, 0.95) 
+                                    for x in range(epochs)]
+                    val_accuracy = [min(0.75 * (1 - np.exp(-0.25 * x)) + 0.2 * np.random.random() * 0.1, 0.92) 
+                                  for x in range(epochs)]
+                    
+                    # Create plot
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=epochs_list,
+                        y=train_accuracy,
+                        name='Training Accuracy',
+                        line=dict(color='#636EFA')
+                    ))
+                    fig.add_trace(go.Scatter(
+                        x=epochs_list,
+                        y=val_accuracy,
+                        name='Validation Accuracy',
+                        line=dict(color='#EF553B')
+                    ))
+                    
+                    fig.update_layout(
+                        title='Training Progress',
+                        xaxis_title='Epochs',
+                        yaxis_title='Accuracy',
+                        legend=dict(orientation='h', y=1.1, yanchor='bottom', x=0.5, xanchor='center'),
+                        template='plotly_dark'
                     )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
         
         # Add some spacing at the bottom
         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -1881,4 +2401,3 @@ def safe_main():
 
 if __name__ == "__main__":
     safe_main()
-
