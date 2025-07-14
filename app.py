@@ -1355,42 +1355,14 @@ def main():
                     except Exception as e:
                         st.error(f"Error processing your request: {str(e)}")
                 
-                # Quick action buttons with context-aware prompts
-                st.subheader("Quick Actions")
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    if st.button("💡 Analyze Images", use_container_width=True):
-                        if uploaded_images:
-                            st.session_state.messages.append({
-                                "role": "user", 
-                                "content": "Please analyze these medical images and describe any notable findings.",
-                                "images": uploaded_images
-                            })
-                            st.rerun()
-                        else:
-                            st.warning("Please upload images first")
-                    
-                with col2:
-                    if st.button("📊 Generate Report", use_container_width=True):
-                        if uploaded_images:
-                            st.session_state.messages.append({
-                                "role": "user", 
-                                "content": "Generate a detailed medical report for these images, including observations and recommendations.",
-                                "images": uploaded_images
-                            })
-                            st.rerun()
-                        else:
-                            st.warning("Please upload images first")
-                            
-                with col3:
-                    if st.button("🔄 Clear Chat", use_container_width=True):
-                        st.session_state.messages = [{
-                            "role": "assistant", 
-                            "content": "Chat history cleared. You can upload new images and ask me anything about them.",
-                            "images": []
-                        }]
-                        st.rerun()
+                # Clear chat button
+                if st.button("🔄 Clear Chat", use_container_width=True, type="secondary"):
+                    st.session_state.messages = [{
+                        "role": "assistant", 
+                        "content": "Chat history cleared. You can upload new images and ask me anything about them.",
+                        "images": []
+                    }]
+                    st.rerun()
                         
             except Exception as e:
                 st.error(f"Failed to initialize AI assistant: {str(e)}")
