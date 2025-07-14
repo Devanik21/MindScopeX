@@ -947,7 +947,35 @@ def main():
         app = MedicalAnalyticsApp()
         
         # Render sidebar configuration
-        api_key, analysis_type, batch_processing, quality_threshold = UIComponents.render_sidebar_config()
+        with st.sidebar:
+            st.header("🔑 Configuration")
+            api_key = st.text_input("Enter your Gemini API Key", type="password", 
+                                 help="Get your API key from https://ai.google.dev/")
+            
+            st.divider()
+            
+            st.subheader("Analysis Settings")
+            analysis_type = st.selectbox(
+                "Analysis Type",
+                [t.value for t in AnalysisType],
+                format_func=lambda x: x.replace('_', ' ').title()
+            )
+            
+            batch_processing = st.toggle("Enable Batch Processing", value=True,
+                                       help="Process multiple images simultaneously")
+            
+            quality_threshold = st.slider(
+                "Minimum Quality Threshold",
+                min_value=0.0, max_value=1.0, value=0.7, step=0.05,
+                help="Minimum confidence score to consider an analysis valid"
+            )
+            
+            st.divider()
+            
+            # Add a reset button for the sidebar
+            if st.button("🔄 Reset Settings"):
+                st.session_state.clear()
+                st.rerun()
         
         # API key validation
         if not api_key:
@@ -1203,57 +1231,170 @@ def main():
         with tab5:  # AI Assistant Tab
             st.header("🧠 AI Assistant")
             
-            # Chat interface
-            st.subheader("Chat with AI Assistant")
-            
-            # Initialize chat history
-            if "messages" not in st.session_state:
-                st.session_state.messages = [
-                    {"role": "assistant", "content": "Hello! I'm your AI assistant. How can I help you with your medical image analysis today?"}
-                ]
-            
-            # Display chat messages
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-            
-            # Chat input
-            if prompt := st.chat_input("Ask me anything..."):
-                # Add user message to chat history
-                st.session_state.messages.append({"role": "user", "content": prompt})
+            # Check if API key is available
+            if not api_key:
+                st.warning("🔑 Please enter your Gemini API key in the sidebar to use the AI Assistant.")
+                return
                 
-                # Display user message in chat message container
-                with st.chat_message("user"):
-                    st.markdown(prompt)
+            try:
+                # Initialize Gemini model
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel('gemini-pro-vision')
                 
-                # Display assistant response in chat message container
-                with st.chat_message("assistant"):
-                    response = f"I received your question: {prompt}. This is a simulated response. In a real implementation, this would connect to an AI model."
-                    st.markdown(response)
+                # Initialize chat history
+                if "messages" not in st.session_state:
+                    st.session_state.messages = [{
+                        "role": "assistant", 
+                        "content": "Hello! I'm your AI assistant. I can help you analyze medical images and answer your questions. You can upload images and ask me anything about them.",
+                        "images": []
+                    }]
                 
-                # Add assistant response to chat history
-                st.session_state.messages.append({"role": "assistant", "content": response})
-            
-            # Quick action buttons
-            st.subheader("Quick Actions")
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                if st.button("💡 Explain Analysis", use_container_width=True):
-                    st.session_state.messages.append({"role": "user", "content": "Explain the last analysis"})
-                    st.rerun()
+                # Display chat messages
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+                        # Display images if any
+                        for img_data in message.get("images", []):
+                            st.image(img_data, use_column_width=True)
                 
-            with col2:
-                if st.button("📊 Generate Report", use_container_width=True):
-                    st.session_state.messages.append({"role": "user", "content": "Generate a report of my recent analyses"})
-                    st.rerun()
+                # Image uploader
+                uploaded_files = st.file_uploader(
+                    "Upload medical images (optional)",
+                    type=["png", "jpg", "jpeg", "dcm"],
+                    accept_multiple_files=True,
+                    key="assistant_uploader"
+                )
+                
+                # Process uploaded images
+                uploaded_images = []
+                if uploaded_files:
+                    for file in uploaded_files:
+                        try:
+                            if file.type == "application/dicom":
+                                # Handle DICOM files
+                                dcm_data = pydicom.dcmread(io.BytesIO(file.getvalue()))
+                                if 'PixelData' in dcm_data:
+                                    img_array = dcm_data.pixel_array
+                                    # Normalize to 0-255
+                                    img_array = ((img_array - img_array.min()) * (255.0 / (img_array.max() - img_array.min()))).astype(np.uint8)
+                                    if len(img_array.shape) == 2:  # Grayscale
+                                        img_array = np.stack([img_array] * 3, axis=-1)
+                                    img = Image.fromarray(img_array)
+                                    uploaded_images.append(img)
+                            else:
+                                # Handle regular images
+                                img = Image.open(io.BytesIO(file.getvalue()))
+                                # Convert to RGB if RGBA
+                                if img.mode == 'RGBA':
+                                    img = img.convert('RGB')
+                                uploaded_images.append(img)
+                        except Exception as e:
+                            st.error(f"Error processing {file.name}: {str(e)}")
+                
+                # Display uploaded images
+                if uploaded_images:
+                    st.subheader("Uploaded Images")
+                    cols = st.columns(min(3, len(uploaded_images)))
+                    for idx, img in enumerate(uploaded_images):
+                        with cols[idx % 3]:
+                            st.image(img, use_column_width=True, caption=f"Image {idx+1}")
+                
+                # Chat input
+                if prompt := st.chat_input("Ask me about these images..."):
+                    try:
+                        # Add user message with images to chat history
+                        user_message = {
+                            "role": "user",
+                            "content": prompt,
+                            "images": uploaded_images
+                        }
+                        st.session_state.messages.append(user_message)
+                        
+                        # Display user message with images
+                        with st.chat_message("user"):
+                            st.markdown(prompt)
+                            for img in uploaded_images:
+                                st.image(img, use_column_width=True)
+                        
+                        # Generate response using Gemini
+                        with st.chat_message("assistant"):
+                            with st.spinner("Analyzing..."):
+                                try:
+                                    # Prepare content for Gemini
+                                    content = [prompt]
+                                    
+                                    # Add images if any
+                                    for img in uploaded_images:
+                                        content.append(img)
+                                    
+                                    # Get response from Gemini
+                                    response = model.generate_content(content)
+                                    
+                                    # Display response
+                                    if response.text:
+                                        st.markdown(response.text)
+                                        
+                                        # Add to chat history
+                                        assistant_message = {
+                                            "role": "assistant",
+                                            "content": response.text,
+                                            "images": []
+                                        }
+                                        st.session_state.messages.append(assistant_message)
+                                    else:
+                                        st.error("No response from the AI model.")
+                                        
+                                except Exception as e:
+                                    error_msg = f"Error generating response: {str(e)}"
+                                    st.error(error_msg)
+                                    st.session_state.messages.append({
+                                        "role": "assistant",
+                                        "content": error_msg,
+                                        "images": []
+                                    })
+                    except Exception as e:
+                        st.error(f"Error processing your request: {str(e)}")
+                
+                # Quick action buttons with context-aware prompts
+                st.subheader("Quick Actions")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if st.button("💡 Analyze Images", use_container_width=True):
+                        if uploaded_images:
+                            st.session_state.messages.append({
+                                "role": "user", 
+                                "content": "Please analyze these medical images and describe any notable findings.",
+                                "images": uploaded_images
+                            })
+                            st.rerun()
+                        else:
+                            st.warning("Please upload images first")
                     
-            with col3:
-                if st.button("🔄 Clear Chat", use_container_width=True):
-                    st.session_state.messages = [
-                        {"role": "assistant", "content": "Chat history cleared. How can I assist you now?"}
-                    ]
-                    st.rerun()
+                with col2:
+                    if st.button("📊 Generate Report", use_container_width=True):
+                        if uploaded_images:
+                            st.session_state.messages.append({
+                                "role": "user", 
+                                "content": "Generate a detailed medical report for these images, including observations and recommendations.",
+                                "images": uploaded_images
+                            })
+                            st.rerun()
+                        else:
+                            st.warning("Please upload images first")
+                            
+                with col3:
+                    if st.button("🔄 Clear Chat", use_container_width=True):
+                        st.session_state.messages = [{
+                            "role": "assistant", 
+                            "content": "Chat history cleared. You can upload new images and ask me anything about them.",
+                            "images": []
+                        }]
+                        st.rerun()
+                        
+            except Exception as e:
+                st.error(f"Failed to initialize AI assistant: {str(e)}")
+                st.info("Please check your API key and internet connection.")
         
         with tab6:  # Research Tab
             st.header("🔬 Research Hub")
