@@ -679,326 +679,79 @@ class MedicalAnalyticsApp:
 
 # Streamlit UI Components
 class UIComponents:
-    """Reusable UI components for medical research"""
+    """Reusable UI components"""
     
     @staticmethod
     def render_header():
-        """Render application header with research focus"""
+        """Render application header"""
         st.set_page_config(
-            page_title="Advanced Medical Research Platform",
-            page_icon="🔬",
+            page_title="Advanced Medical Image Analytics",
+            page_icon="🧠",
             layout="wide",
             initial_sidebar_state="expanded"
         )
         
-        # Enhanced CSS for research interface
+        st.title("🧠 Advanced Medical Image Analytics Platform")
         st.markdown("""
-        <style>
-            .main .block-container {padding-top: 1rem;}
-            .stButton>button {width: 100%;}
-            .stProgress > div > div > div > div {background-color: #2e86de;}
-            .st-bb {background-color: #f8f9fa;}
-            .st-bc {background-color: #ffffff;}
-            .st-bd {border-color: #dee2e6;}
-            .st-be {color: #212529;}
-            .tab-content {padding: 1rem 0;}
-            .tab-content h3 {margin-top: 0;}
-            .research-tab {padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
-            .research-tab h3 {color: #2c3e50; margin-top: 0;}
-            .research-metric {background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;}
-        </style>
-        """, unsafe_allow_html=True)
+        ### Professional Medical Image Analysis with AI
         
-        # Main header with research focus
-        col1, col2 = st.columns([1, 5])
-        with col1:
-            st.image("https://img.icons8.com/color/96/000000/test-tube.png", width=80)
-        with col2:
-            st.title("Advanced Medical Research Platform")
-            st.caption("Cutting-edge tools for medical imaging research and analysis")
+        This platform provides advanced medical image analysis capabilities using cutting-edge AI technology.
+        Upload brain MRI images and receive comprehensive analytical insights to assist medical professionals.
         
-        st.markdown("---")
+        **Features:**
+        - 🔬 Advanced AI-powered analysis
+        - 📊 Comprehensive reporting
+        - 🔒 HIPAA-compliant security
+        - 📈 Performance analytics
+        - 🎯 Multiple analysis types
+        """)
     
     @staticmethod
     def render_sidebar_config():
-        """Render research-focused sidebar configuration"""
-        with st.sidebar:
-            st.header("⚙️ Research Configuration")
-            
-            # API Key Input
-            api_key = st.text_input(
-                "🔑 Research API Key",
-                type="password",
-                help="Enter your research API key for advanced features"
-            )
-            
-            # Research Focus Area
-            research_focus = st.selectbox(
-                "🎯 Research Focus",
-                [
-                    "Oncology Imaging",
-                    "Neurological Disorders",
-                    "Cardiovascular Imaging",
-                    "Musculoskeletal Research",
-                    "Pulmonary Studies",
-                    "Pediatric Imaging"
-                ],
-                index=0,
-                help="Select your primary research area"
-            )
-            
-            # Analysis Type with research-specific options
-            analysis_type = st.selectbox(
-                "🔍 Analysis Type",
-                [t.value for t in AnalysisType] + [
-                    "radiomics_analysis",
-                    "longitudinal_study",
-                    "ai_model_training"
-                ],
-                format_func=lambda x: x.replace("_", " ").title(),
-                index=0,
-                help="Select the type of analysis to perform"
-            )
-            
-            # Advanced Research Options
-            with st.expander("🧪 Advanced Research Settings"):
-                # Data Source
-                data_source = st.radio(
-                    "📂 Data Source",
-                    ["Upload", "PACS", "Research Database", "Federated Learning"],
-                    index=0,
-                    help="Select data source for analysis"
-                )
-                
-                # Processing Resources
-                processing_resources = st.select_slider(
-                    "⚡ Compute Resources",
-                    options=["Basic", "Standard", "High", "GPU-Accelerated", "Distributed"],
-                    value="Standard",
-                    help="Allocate computational resources"
-                )
-                
-                # Data Privacy Level
-                privacy_level = st.select_slider(
-                    "🔒 Privacy Level",
-                    options=["De-identified", "Limited Dataset", "Full PHI"],
-                    value="De-identified",
-                    help="Select data privacy level"
-                )
-            
-            st.markdown("---")
-            st.markdown("### Research Tools")
-            
-            # Quick Access Buttons
-            if st.button("📚 Open Research Library"):
-                st.session_state.active_tab = "Literature Review"
-                
-            if st.button("📊 View Analytics"):
-                st.session_state.active_tab = "Analytics"
-                
-            if st.button("🤖 AI Assistant"):
-                st.session_state.show_ai_assistant = not st.session_state.get('show_ai_assistant', False)
-            
-            st.markdown("---")
-            st.markdown("### About")
-            st.markdown("""
-            **Advanced Medical Research Platform**  
-            Research Edition v3.0  
-            
-            Comprehensive tools for medical imaging research with AI-powered analytics.
-            """)    
+        """Render sidebar configuration"""
+        st.sidebar.header("🔧 Configuration")
         
-        return api_key, analysis_type, True, 0.5
-    
-    @staticmethod
-    def render_research_tabs():
-        """Render the main research tabs"""
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "🧬 Radiomics Analysis",
-            "📊 Longitudinal Studies",
-            "🧠 AI Model Training",
-            "🔍 Literature Review",
-            "📈 Statistical Analysis",
-            "🌐 Collaborative Research"
-        ])
+        # API Key input
+        api_key = st.sidebar.text_input(
+            "Gemini API Key",
+            type="password",
+            help="Enter your Google Gemini API key"
+        )
         
-        with tab1:
-            st.header("🧬 Radiomics Analysis")
-            st.markdown("""
-            ### Extract Quantitative Imaging Biomarkers
-            
-            Advanced radiomics feature extraction from medical images for precision medicine.
-            """)
-            
-            # Placeholder for radiomics controls
-            col1, col2 = st.columns(2)
-            with col1:
-                st.selectbox("Feature Classes", 
-                           ["First Order", "Shape", "Texture", "Wavelet"],
-                           key="feature_classes")
-                st.checkbox("Enable Deep Radiomics", value=False, key="deep_radiomics")
-                
-            with col2:
-                st.selectbox("Filtering", 
-                           ["None", "Wavelet", "Laplacian", "Gradient", "Local Binary Pattern"],
-                           key="filter_type")
-                st.checkbox("Enable Feature Selection", value=True, key="feature_selection")
-            
-            st.markdown("---")
-            st.markdown("### Feature Extraction Results")
-            st.info("Feature extraction will be performed after image upload and analysis.")
-            
-        with tab2:
-            st.header("📊 Longitudinal Study Analysis")
-            st.markdown("""
-            ### Track Disease Progression Over Time
-            
-            Compare multiple imaging studies from the same patient to analyze disease progression
-            and treatment response.
-            """)
-            
-            # Placeholder for longitudinal study controls
-            st.radio("Analysis Type", 
-                    ["Tumor Growth", "Atrophy Measurement", "Perfusion Changes", "Custom ROI Analysis"],
-                    horizontal=True,
-                    key="long_analysis_type")
-            
-            st.slider("Time Window (months)", 1, 60, 12, 1, 
-                     help="Select the time window for analysis")
-            
-            st.markdown("---")
-            st.markdown("### Study Timeline")
-            st.info("Upload multiple studies to visualize changes over time.")
-            
-        with tab3:
-            st.header("🧠 AI Model Training")
-            st.markdown("""
-            ### Custom Model Development
-            
-            Train and validate custom deep learning models on your imaging data.
-            """)
-            
-            # Placeholder for model training controls
-            model_type = st.selectbox("Model Architecture", 
-                                    ["3D U-Net", "nnU-Net", "DenseNet", "Custom"],
-                                    key="model_arch")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.number_input("Epochs", 1, 1000, 100, key="epochs")
-                st.select_slider("Learning Rate", 
-                               options=[f"1e-{i}" for i in range(1, 7)], 
-                               value="1e-4",
-                               key="learning_rate")
-            
-            with col2:
-                st.selectbox("Loss Function", 
-                           ["Dice Loss", "Cross Entropy", "Focal Loss", "Combined"],
-                           key="loss_func")
-                st.checkbox("Enable Early Stopping", value=True, key="early_stop")
-            
-            st.markdown("---")
-            st.markdown("### Training Progress")
-            st.info("Configure and start training to see metrics and visualizations.")
-            
-        with tab4:
-            st.header("🔍 Literature Review")
-            st.markdown("""
-            ### AI-Powered Research Assistant
-            
-            Search and analyze the latest medical literature related to your research.
-            """)
-            
-            # Placeholder for literature search
-            query = st.text_input("Search Medical Literature", 
-                                 placeholder="e.g., 'radiomics in glioblastoma prognosis'")
-            
-            if query:
-                st.info(f"Searching for: {query}")
-                
-                # Simulated search results
-                with st.expander("📄 Title: Radiomics in Glioblastoma: Current Applications..."):
-                    st.caption("Journal of Medical Imaging, 2023 | DOI: 10.xxxx/xxxxxx")
-                    st.write("Abstract: This review examines the current state of radiomics in...")
-                    st.button("View Full Text", key="paper1")
-                
-                with st.expander("📄 Title: Deep Learning Approaches for Brain Tumor Segmentation..."):
-                    st.caption("Nature Scientific Reports, 2023 | DOI: 10.xxxx/xxxxxx")
-                    st.write("Abstract: Recent advances in deep learning have shown...")
-                    st.button("View Full Text", key="paper2")
-            
-        with tab5:
-            st.header("📈 Statistical Analysis")
-            st.markdown("""
-            ### Advanced Statistical Tools
-            
-            Perform statistical analysis on your imaging data and research findings.
-            """)
-            
-            # Placeholder for statistical analysis
-            analysis_type = st.selectbox("Analysis Type",
-                                       ["Descriptive Statistics", 
-                                        "T-tests & ANOVAs",
-                                        "Regression Analysis",
-                                        "Survival Analysis",
-                                        "Machine Learning Pipeline"],
-                                       key="stat_analysis_type")
-            
-            if analysis_type == "Descriptive Statistics":
-                st.write("Generate summary statistics and visualizations for your data.")
-            elif analysis_type == "T-tests & ANOVAs":
-                st.write("Compare groups and test hypotheses about your imaging biomarkers.")
-            elif analysis_type == "Regression Analysis":
-                st.write("Model relationships between imaging features and clinical outcomes.")
-            elif analysis_type == "Survival Analysis":
-                st.write("Analyze time-to-event data with imaging biomarkers.")
-            else:  # ML Pipeline
-                st.write("Build and evaluate machine learning models on your data.")
-            
-            st.markdown("---")
-            st.markdown("### Results")
-            st.info("Run analysis to see results and visualizations.")
-            
-        with tab6:
-            st.header("🌐 Collaborative Research")
-            st.markdown("""
-            ### Multi-Center Research Tools
-            
-            Collaborate with researchers worldwide while maintaining data privacy.
-            """)
-            
-            # Placeholder for collaboration tools
-            st.radio("Collaboration Mode",
-                   ["Federated Learning", "Data Sharing", "Model Sharing", "Annotation Review"],
-                   key="collab_mode")
-            
-            if st.button("Connect to Research Network"):
-                st.session_state.connected = not st.session_state.get('connected', False)
-            
-            if st.session_state.get('connected', False):
-                st.success("✅ Connected to Global Research Network")
-                
-                # Simulated research network
-                st.markdown("#### Active Research Projects")
-                projects = [
-                    {"name": "Brain Tumor Segmentation Challenge", "institutions": 24, "datasets": "1.2TB"},
-                    {"name": "COVID-19 Imaging Biomarkers", "institutions": 18, "datasets": "850GB"},
-                    {"name": "Alzheimer's Disease Prediction", "institutions": 12, "datasets": "2.1TB"}
-                ]
-                
-                for project in projects:
-                    with st.expander(f"🔬 {project['name']}"):
-                        st.write(f"**Institutions:** {project['institutions']}")
-                        st.write(f"**Datasets:** {project['datasets']} of imaging data")
-                        st.button("Join Project", key=f"join_{project['name']}")
-            
-            st.markdown("---")
-            st.markdown("### Research Ethics")
-            st.info("All collaborations follow strict ethical guidelines and data protection standards.")
+        # Analysis type selection
+        analysis_type = st.sidebar.selectbox(
+            "Analysis Type",
+            options=[
+                AnalysisType.TUMOR_DETECTION,
+                AnalysisType.TISSUE_CLASSIFICATION,
+                AnalysisType.ANOMALY_DETECTION
+            ],
+            format_func=lambda x: x.value.replace('_', ' ').title()
+        )
+        
+        # Advanced settings
+        st.sidebar.subheader("Advanced Settings")
+        
+        batch_processing = st.sidebar.checkbox(
+            "Enable Batch Processing",
+            value=True,
+            help="Process multiple images simultaneously"
+        )
+        
+        quality_threshold = st.sidebar.slider(
+            "Quality Threshold",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.5,
+            step=0.1,
+            help="Minimum quality score for analysis"
+        )
+        
+        return api_key, analysis_type, batch_processing, quality_threshold
     
     @staticmethod
     def render_file_uploader():
-        """Render file uploader component"""
+        """Render file upload component"""
         st.header("📁 Image Upload")
         
         uploaded_files = st.file_uploader(
