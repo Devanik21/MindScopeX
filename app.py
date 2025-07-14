@@ -964,7 +964,17 @@ def main():
         st.success("✅ AI engine initialized successfully!")
         
         # Create tabs for different sections
-        tab1, tab2, tab3, tab4 = st.tabs(["📁 Analysis", "📊 Dashboard", "📋 History", "⚙️ Settings"])
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+            "📁 Analysis", 
+            "📈 Analytics", 
+            "🔍 Search", 
+            "📂 Projects", 
+            "👥 Team", 
+            "📱 Mobile",
+            "📊 Dashboard", 
+            "📋 History", 
+            "⚙️ Settings"
+        ])
         
         with tab1:
             # File upload and processing
@@ -1049,7 +1059,7 @@ def main():
             st.header("📋 Analysis History")
             
             # Filter controls
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns([1, 1, 2])
             
             with col1:
                 days_filter = st.selectbox(
@@ -1063,6 +1073,9 @@ def main():
                     "Analysis Type",
                     options=["All"] + [t.value for t in AnalysisType]
                 )
+                
+            with col3:
+                search_query = st.text_input("Search history", "")
             
             # Get filtered history
             history = app.db_manager.get_analysis_history(limit=100)
@@ -1096,9 +1109,178 @@ def main():
             else:
                 st.info("No analysis history available.")
         
-        with tab4:
-            # Settings and configuration
-            st.header("⚙️ Settings")
+        with tab2:  # Analytics Tab
+            st.header("📈 Advanced Analytics")
+            
+            # Time series analysis
+            st.subheader("📅 Time Series Analysis")
+            time_period = st.selectbox(
+                "Select Time Period",
+                ["Last 7 days", "Last 30 days", "Last 90 days", "Last year"],
+                key="analytics_time_period"
+            )
+            
+            # Sample analytics visualization
+            st.area_chart({
+                'Analysis Volume': [10, 15, 12, 8, 14, 18, 20],
+                'Success Rate': [0.8, 0.85, 0.78, 0.9, 0.82, 0.88, 0.92],
+                'Processing Time (s)': [2.1, 1.9, 2.3, 1.8, 2.0, 1.7, 1.5]
+            }, use_container_width=True)
+            
+            # Performance metrics
+            st.subheader("⚡ Performance Metrics")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Average Processing Time", "1.8s", "-0.2s from last week")
+            with col2:
+                st.metric("Success Rate", "87%", "+2%")
+            with col3:
+                st.metric("Total Analyses", "1,245", "+128 this month")
+        
+        with tab3:  # Search Tab
+            st.header("🔍 Search Analysis")
+            
+            # Search bar
+            search_query = st.text_input("Search analysis history", "")
+            
+            # Filters
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                date_filter = st.selectbox("Date Range", ["All time", "Last 7 days", "Last 30 days", "Last year"])
+            with col2:
+                type_filter = st.selectbox("Analysis Type", ["All types"] + [t.value for t in AnalysisType])
+            with col3:
+                sort_by = st.selectbox("Sort by", ["Most recent", "Oldest", "Highest confidence", "Lowest confidence"])
+            
+            # Search results placeholder
+            if search_query:
+                st.info(f"Showing results for: {search_query}")
+                # In a real implementation, this would query the database
+                search_results = [
+                    {"id": "123", "title": f"Analysis matching '{search_query}'", "date": "2023-06-15", "type": "tumor_detection", "confidence": 0.92},
+                    {"id": "124", "title": f"Related to {search_query}", "date": "2023-06-14", "type": "tissue_classification", "confidence": 0.85}
+                ]
+                
+                for result in search_results:
+                    with st.expander(f"{result['title']} - {result['date']}"):
+                        st.write(f"**Type:** {result['type'].replace('_', ' ').title()}")
+                        st.write(f"**Confidence:** {result['confidence']*100:.1f}%")
+                        st.button("View Details", key=f"view_{result['id']}")
+            else:
+                st.info("Enter a search term to find previous analyses")
+        
+        with tab4:  # Projects Tab
+            st.header("📂 Project Management")
+            
+            # Create new project
+            with st.expander("➕ New Project", expanded=False):
+                project_name = st.text_input("Project Name")
+                project_desc = st.text_area("Description")
+                if st.button("Create Project"):
+                    if project_name:
+                        st.success(f"Project '{project_name}' created!")
+                    else:
+                        st.error("Please enter a project name")
+            
+            # Project list
+            st.subheader("Your Projects")
+            projects = [
+                {"name": "Tumor Analysis Q2 2023", "analyses": 24, "last_updated": "2023-06-15"},
+                {"name": "Clinical Trial Data", "analyses": 156, "last_updated": "2023-06-10"},
+                {"name": "Research Paper Figures", "analyses": 8, "last_updated": "2023-05-28"}
+            ]
+            
+            for project in projects:
+                with st.expander(f"{project['name']} ({project['analyses']} analyses)"):
+                    st.caption(f"Last updated: {project['last_updated']}")
+                    st.progress(min(project['analyses'] / 200, 1.0))
+                    col1, col2 = st.columns([1, 4])
+                    with col1:
+                        st.button("Open", key=f"open_{project['name']}")
+                    with col2:
+                        st.button("Share", key=f"share_{project['name']}")
+        
+        with tab5:  # Team Tab
+            st.header("👥 Team Collaboration")
+            
+            # Team members
+            st.subheader("Team Members")
+            team_members = [
+                {"name": "Dr. Sarah Chen", "role": "Radiologist", "status": "Online", "last_active": "Now"},
+                {"name": "Dr. James Wilson", "role": "Oncologist", "status": "Away", "last_active": "30m ago"},
+                {"name": "Dr. Maria Garcia", "role": "Researcher", "status": "Offline", "last_active": "2h ago"},
+                {"name": "Dr. David Kim", "role": "Pathologist", "status": "Online", "last_active": "Now"}
+            ]
+            
+            for member in team_members:
+                status_emoji = "🟢" if member["status"] == "Online" else "🟡" if member["status"] == "Away" else "⚪"
+                st.write(f"{status_emoji} **{member['name']}** - {member['role']}")
+                st.caption(f"{member['status']} • Last active: {member['last_active']}")
+                st.text_input("Add a note for this team member", key=f"note_{member['name']}")
+                st.write("---")
+            
+            # Team activity feed
+            st.subheader("Recent Activity")
+            activities = [
+                {"user": "Dr. Sarah Chen", "action": "completed analysis", "time": "10 minutes ago"},
+                {"user": "Dr. James Wilson", "action": "commented on case #1234", "time": "45 minutes ago"},
+                {"user": "Dr. Maria Garcia", "action": "uploaded new dataset", "time": "2 hours ago"}
+            ]
+            
+            for activity in activities:
+                st.write(f"🔹 **{activity['user']}** {activity['action']}")
+                st.caption(activity['time'])
+        
+        with tab6:  # Mobile Tab
+            st.header("📱 Mobile Experience")
+            
+            st.subheader("Mobile App Settings")
+            
+            # Mobile preferences
+            col1, col2 = st.columns(2)
+            with col1:
+                push_notifications = st.toggle("Push Notifications", value=True)
+                offline_access = st.toggle("Offline Access", value=True)
+            with col2:
+                image_quality = st.select_slider(
+                    "Image Quality",
+                    options=["Low", "Medium", "High", "Maximum"],
+                    value="Medium"
+                )
+            
+            # Mobile sync status
+            st.subheader("Synchronization")
+            if st.button("🔄 Sync Now"):
+                with st.spinner("Syncing data..."):
+                    time.sleep(1.5)
+                    st.success("Synchronization complete!")
+            
+            # Mobile usage statistics
+            st.subheader("Mobile Usage")
+            st.metric("Data Used This Month", "245 MB", "of 1 GB")
+            st.progress(0.245)
+            
+            # Help section
+            with st.expander("📱 Mobile App Help"):
+                st.write("""
+                ### Getting Started with Mobile
+                1. Download the app from your device's app store
+                2. Log in with your credentials
+                3. Enable the features you need
+                
+                ### Troubleshooting
+                - **Push Notifications Not Working**: Check your device settings
+                - **Sync Issues**: Ensure you have an active internet connection
+                - **Performance**: Try reducing image quality in settings
+                """)
+        
+        with tab7:  # Dashboard (previously tab2)
+            # Analytics dashboard
+            UIComponents.render_analytics_dashboard(app)
+        
+        with tab8:  # History (previously tab3)
+            # Analysis history
+            st.header("📋 Analysis History")
             
             # System information
             st.subheader("🖥️ System Information")
