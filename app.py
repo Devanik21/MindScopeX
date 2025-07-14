@@ -969,8 +969,8 @@ def main():
             "📈 Analytics", 
             "🔍 Search", 
             "📂 Projects", 
-            "👥 Team", 
-            "📱 Mobile",
+            "🧠 AI Assistant", 
+            "🔬 Research",
             "📊 Dashboard", 
             "📋 History", 
             "⚙️ Settings"
@@ -1200,82 +1200,164 @@ def main():
                     with col2:
                         st.button("Share", key=f"share_{project['name']}")
         
-        with tab5:  # Team Tab
-            st.header("👥 Team Collaboration")
+        with tab5:  # AI Assistant Tab
+            st.header("🧠 AI Assistant")
             
-            # Team members
-            st.subheader("Team Members")
-            team_members = [
-                {"name": "Dr. Sarah Chen", "role": "Radiologist", "status": "Online", "last_active": "Now"},
-                {"name": "Dr. James Wilson", "role": "Oncologist", "status": "Away", "last_active": "30m ago"},
-                {"name": "Dr. Maria Garcia", "role": "Researcher", "status": "Offline", "last_active": "2h ago"},
-                {"name": "Dr. David Kim", "role": "Pathologist", "status": "Online", "last_active": "Now"}
-            ]
+            # Chat interface
+            st.subheader("Chat with AI Assistant")
             
-            for member in team_members:
-                status_emoji = "🟢" if member["status"] == "Online" else "🟡" if member["status"] == "Away" else "⚪"
-                st.write(f"{status_emoji} **{member['name']}** - {member['role']}")
-                st.caption(f"{member['status']} • Last active: {member['last_active']}")
-                st.text_input("Add a note for this team member", key=f"note_{member['name']}")
-                st.write("---")
+            # Initialize chat history
+            if "messages" not in st.session_state:
+                st.session_state.messages = [
+                    {"role": "assistant", "content": "Hello! I'm your AI assistant. How can I help you with your medical image analysis today?"}
+                ]
             
-            # Team activity feed
-            st.subheader("Recent Activity")
-            activities = [
-                {"user": "Dr. Sarah Chen", "action": "completed analysis", "time": "10 minutes ago"},
-                {"user": "Dr. James Wilson", "action": "commented on case #1234", "time": "45 minutes ago"},
-                {"user": "Dr. Maria Garcia", "action": "uploaded new dataset", "time": "2 hours ago"}
-            ]
+            # Display chat messages
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
             
-            for activity in activities:
-                st.write(f"🔹 **{activity['user']}** {activity['action']}")
-                st.caption(activity['time'])
-        
-        with tab6:  # Mobile Tab
-            st.header("📱 Mobile Experience")
-            
-            st.subheader("Mobile App Settings")
-            
-            # Mobile preferences
-            col1, col2 = st.columns(2)
-            with col1:
-                push_notifications = st.toggle("Push Notifications", value=True)
-                offline_access = st.toggle("Offline Access", value=True)
-            with col2:
-                image_quality = st.select_slider(
-                    "Image Quality",
-                    options=["Low", "Medium", "High", "Maximum"],
-                    value="Medium"
-                )
-            
-            # Mobile sync status
-            st.subheader("Synchronization")
-            if st.button("🔄 Sync Now"):
-                with st.spinner("Syncing data..."):
-                    time.sleep(1.5)
-                    st.success("Synchronization complete!")
-            
-            # Mobile usage statistics
-            st.subheader("Mobile Usage")
-            st.metric("Data Used This Month", "245 MB", "of 1 GB")
-            st.progress(0.245)
-            
-            # Help section
-            with st.expander("📱 Mobile App Help"):
-                st.write("""
-                ### Getting Started with Mobile
-                1. Download the app from your device's app store
-                2. Log in with your credentials
-                3. Enable the features you need
+            # Chat input
+            if prompt := st.chat_input("Ask me anything..."):
+                # Add user message to chat history
+                st.session_state.messages.append({"role": "user", "content": prompt})
                 
-                ### Troubleshooting
-                - **Push Notifications Not Working**: Check your device settings
-                - **Sync Issues**: Ensure you have an active internet connection
-                - **Performance**: Try reducing image quality in settings
-                """)
+                # Display user message in chat message container
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+                
+                # Display assistant response in chat message container
+                with st.chat_message("assistant"):
+                    response = f"I received your question: {prompt}. This is a simulated response. In a real implementation, this would connect to an AI model."
+                    st.markdown(response)
+                
+                # Add assistant response to chat history
+                st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Quick action buttons
+            st.subheader("Quick Actions")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                if st.button("💡 Explain Analysis", use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": "Explain the last analysis"})
+                    st.rerun()
+                
+            with col2:
+                if st.button("📊 Generate Report", use_container_width=True):
+                    st.session_state.messages.append({"role": "user", "content": "Generate a report of my recent analyses"})
+                    st.rerun()
+                    
+            with col3:
+                if st.button("🔄 Clear Chat", use_container_width=True):
+                    st.session_state.messages = [
+                        {"role": "assistant", "content": "Chat history cleared. How can I assist you now?"}
+                    ]
+                    st.rerun()
         
-        with tab7:  # Dashboard (previously tab2)
+        with tab6:  # Research Tab
+            st.header("🔬 Research Hub")
+            
+            # Research paper search
+            st.subheader("Find Research Papers")
+            
+            # Search filters
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                search_query = st.text_input("Search papers...")
+                
+            with col2:
+                year_range = st.slider("Publication Year", 2010, 2025, (2020, 2025))
+            
+            # Categories
+            categories = st.multiselect(
+                "Categories",
+                ["Radiology", "Oncology", "Pathology", "Neuroscience", "Cardiology", "AI/ML"],
+                ["Radiology", "AI/ML"]
+            )
+            
+            # Search button
+            if st.button("🔍 Search Papers", type="primary"):
+                with st.spinner("Searching for relevant papers..."):
+                    time.sleep(1)
+                    
+            # Sample research papers (in a real app, this would come from a database)
+            if search_query:
+                st.subheader(f"Results for: {search_query}")
+                
+                papers = [
+                    {
+                        "title": f"Advancements in {search_query} Detection Using Deep Learning",
+                        "authors": "Smith et al.",
+                        "journal": "Nature Medical Imaging",
+                        "year": 2024,
+                        "abstract": f"This paper presents a novel deep learning approach for {search_query} detection in medical images, achieving state-of-the-art results on benchmark datasets.",
+                        "citations": 124,
+                        "url": "#"
+                    },
+                    {
+                        "title": f"A Comprehensive Review of {search_query} in Clinical Practice",
+                        "authors": "Johnson & Williams",
+                        "journal": "Journal of Medical Research",
+                        "year": 2023,
+                        "abstract": f"This review covers the latest developments in {search_query}, including diagnostic criteria, treatment options, and future directions.",
+                        "citations": 89,
+                        "url": "#"
+                    }
+                ]
+                
+                for paper in papers:
+                    with st.expander(f"**{paper['title']}**"):
+                        st.write(f"**Authors:** {paper['authors']}")
+                        st.write(f"**Journal:** {paper['journal']}, {paper['year']} • {paper['citations']} citations")
+                        st.write(f"**Abstract:** {paper['abstract']}")
+                        st.link_button("📄 View Paper", paper['url'])
+                        
+                        # Save paper button
+                        if st.button("💾 Save to Library", key=f"save_{paper['title']}"):
+                            st.toast(f"Saved: {paper['title']}")
+            
+            # Research tools section
+            st.subheader("Research Tools")
+            
+            tool_col1, tool_col2 = st.columns(2)
+            
+            with tool_col1:
+                with st.container(border=True):
+                    st.markdown("### 📊 Data Analysis")
+                    st.write("Analyze your research data with our statistical tools")
+                    if st.button("Launch Tool", key="data_analysis"):
+                        st.session_state.active_tool = "data_analysis"
+            
+            with tool_col2:
+                with st.container(border=True):
+                    st.markdown("### 📝 Literature Review")
+                    st.write("Generate literature reviews on your research topic")
+                    if st.button("Launch Tool", key="lit_review"):
+                        st.session_state.active_tool = "lit_review"
+            
+            # Show active tool if selected
+            if "active_tool" in st.session_state:
+                if st.session_state.active_tool == "data_analysis":
+                    st.subheader("📊 Data Analysis Tool")
+                    st.write("Upload your research data to get started:")
+                    st.file_uploader("Upload Dataset", type=["csv", "xlsx"])
+                    
+                elif st.session_state.active_tool == "lit_review":
+                    st.subheader("📝 Literature Review Generator")
+                    topic = st.text_input("Enter your research topic:")
+                    if st.button("Generate Review"):
+                        with st.spinner("Generating literature review..."):
+                            time.sleep(2)
+                            st.success("Literature review generated!")
+                            st.text_area("Generated Review", 
+                                       value=f"A comprehensive review of {topic} shows significant advancements in recent years. Key findings include...", 
+                                       height=200)
+        
+        with tab7:  # Dashboard
             # Analytics dashboard
+            st.header("📊 Analytics Dashboard")
             UIComponents.render_analytics_dashboard(app)
         
         with tab8:  # History (previously tab3)
