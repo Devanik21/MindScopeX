@@ -1272,7 +1272,8 @@ class UIComponents:
                 with col1:
                     model_arch = st.selectbox(
                         "Model Architecture",
-                        ["3D U-Net", "ResNet-50", "VGG-16", "Custom"],
+                        options=["3D U-Net", "ResNet-50", "VGG-16", "Custom"],
+                        index=0,
                         help="Select a neural network architecture"
                     )
                     
