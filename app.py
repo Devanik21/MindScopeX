@@ -1239,7 +1239,7 @@ def main():
             try:
                 # Initialize Gemini model
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-pro-vision')
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 
                 # Initialize chat history
                 if "messages" not in st.session_state:
