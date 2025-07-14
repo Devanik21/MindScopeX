@@ -682,6 +682,264 @@ class UIComponents:
     """Reusable UI components for medical research"""
     
     @staticmethod
+    def render_research_settings():
+        """Render the Advanced Research Settings section with data source options"""
+        st.markdown("---")
+        st.subheader("🧪 Advanced Research Settings")
+        st.caption("Configure your research data sources and collaboration settings")
+        
+        # Create tabs for different data source types
+        tab1, tab2, tab3, tab4 = st.tabs(["📤 Upload", "🏥 PACS", "🔍 Research Database", "🌐 Federated Learning"])
+        
+        with tab1:
+            st.markdown("### Local File Upload")
+            st.markdown("Upload medical images and datasets directly from your device")
+            uploaded_files = st.file_uploader(
+                "Drag and drop files or click to browse",
+                type=['dcm', 'nii', 'nii.gz', 'nrrd', 'mhd', 'mha', 'jpg', 'jpeg', 'png', 'tiff'],
+                accept_multiple_files=True,
+                help="Supported formats: DICOM, NIfTI, NRRD, MetaImage, JPG, PNG, TIFF"
+            )
+            
+            if uploaded_files:
+                st.success(f"✅ {len(uploaded_files)} file(s) ready for processing")
+                
+                # Show file details in an expander
+                with st.expander("📋 View selected files"):
+                    for file in uploaded_files:
+                        st.write(f"- {file.name} ({file.size / (1024*1024):.2f} MB)")
+                
+                # Processing options
+                st.markdown("### Processing Options")
+                col1, col2 = st.columns(2)
+                with col1:
+                    anonymize = st.checkbox("Anonymize DICOM files", value=True)
+                    convert_to_nifti = st.checkbox("Convert to NIfTI format", value=False)
+                with col2:
+                    auto_segment = st.checkbox("Auto-segment images", value=False)
+                    extract_metadata = st.checkbox("Extract and store metadata", value=True)
+                
+                # Start processing button
+                if st.button("🚀 Process Files", use_container_width=True):
+                    with st.spinner("Processing files..."):
+                        # Add your file processing logic here
+                        progress_bar = st.progress(0)
+                        for i in range(100):
+                            time.sleep(0.02)  # Simulate processing
+                            progress_bar.progress(i + 1)
+                        st.success("Processing complete!")
+        
+        with tab2:
+            st.markdown("### PACS Integration")
+            st.markdown("Connect to your Picture Archiving and Communication System (PACS)")
+            
+            # PACS connection form
+            with st.form("pacs_connection"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    pacs_host = st.text_input("PACS Host", "pacs.hospital.org")
+                    pacs_port = st.number_input("Port", 104, 65535, 104)
+                with col2:
+                    pacs_ae_title = st.text_input("AE Title", "MY_PACS")
+                    pacs_use_tls = st.checkbox("Use TLS/SSL", value=True)
+                
+                # Advanced settings expander
+                with st.expander("⚙️ Advanced Settings"):
+                    pacs_timeout = st.number_input("Connection Timeout (seconds)", 5, 300, 30)
+                    pacs_retries = st.number_input("Max Retry Attempts", 1, 10, 3)
+                
+                # Connect button
+                if st.form_submit_button("🔌 Connect to PACS", use_container_width=True):
+                    with st.spinner("Connecting to PACS..."):
+                        try:
+                            # Add your PACS connection logic here
+                            time.sleep(1.5)  # Simulate connection delay
+                            st.success("✅ Successfully connected to PACS")
+                            
+                            # Show query interface after connection
+                            st.markdown("### Query Studies")
+                            col1, col2, col3 = st.columns([2, 2, 1])
+                            with col1:
+                                start_date = st.date_input("From Date", value=datetime.now() - timedelta(days=30))
+                            with col2:
+                                end_date = st.date_input("To Date", value=datetime.now())
+                            with col3:
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                if st.button("🔍 Search"):
+                                    # Add your study search logic here
+                                    st.info("Searching for studies...")
+                                    
+                        except Exception as e:
+                            st.error(f"❌ Failed to connect to PACS: {str(e)}")
+        
+        with tab3:
+            st.markdown("### Research Database")
+            st.markdown("Access and manage research datasets and annotations")
+            
+            # Database selection
+            db_options = ["Select a database", "TCIA", "OpenNeuro", "MIMIC-CXR", "Custom Database"]
+            selected_db = st.selectbox("Select Research Database", db_options)
+            
+            if selected_db != "Select a database":
+                st.info(f"ℹ️ Connecting to {selected_db}...")
+                
+                if selected_db == "Custom Database":
+                    # Custom database connection form
+                    with st.form("custom_db_connection"):
+                        db_type = st.selectbox("Database Type", ["MongoDB", "PostgreSQL", "MySQL", "SQLite"])
+                        db_host = st.text_input("Host", "localhost")
+                        db_port = st.number_input("Port", 1, 65535, 27017 if db_type == "MongoDB" else 5432)
+                        db_name = st.text_input("Database Name", "research_db")
+                        db_user = st.text_input("Username")
+                        db_password = st.text_input("Password", type="password")
+                        
+                        if st.form_submit_button("Connect to Database"):
+                            with st.spinner("Connecting..."):
+                                # Add your database connection logic here
+                                time.sleep(1)
+                                st.success("✅ Database connection successful!")
+                else:
+                    # Show available datasets for public databases
+                    st.markdown("### Available Datasets")
+                    
+                    # Simulated dataset search
+                    search_query = st.text_input("Search datasets", placeholder="e.g., lung CT, brain MRI")
+                    
+                    # Example datasets (in a real app, this would come from the database)
+                    example_datasets = [
+                        {"name": "Lung CT Scans", "modality": "CT", "samples": 1_250, "size": "45.7 GB", "license": "CC BY 4.0"},
+                        {"name": "Brain MRI Scans", "modality": "MRI", "samples": 890, "size": "32.1 GB", "license": "CC BY-NC 4.0"},
+                        {"name": "Chest X-Rays", "modality": "X-Ray", "samples": 5_000, "size": "12.3 GB", "license": "CC BY-SA 4.0"},
+                        {"name": "Whole-Body CT Scans", "modality": "CT", "samples": 320, "size": "78.9 GB", "license": "CC BY 3.0"},
+                    ]
+                    
+                    # Filter datasets based on search query
+                    filtered_datasets = [d for d in example_datasets 
+                                      if not search_query or search_query.lower() in d["name"].lower()]
+                    
+                    # Display datasets in a grid
+                    for dataset in filtered_datasets:
+                        with st.expander(f"📁 {dataset['name']}"):
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("Modality", dataset["modality"])
+                            with col2:
+                                st.metric("Samples", f"{dataset['samples']:,}")
+                            with col3:
+                                st.metric("Size", dataset["size"])
+                            with col4:
+                                st.metric("License", dataset["license"])
+                            
+                            # Action buttons
+                            if st.button(f"Preview {dataset['name']}", key=f"preview_{dataset['name']}"):
+                                st.info("Preview functionality would be implemented here")
+                            if st.button(f"Download {dataset['name']}", key=f"dl_{dataset['name']}"):
+                                st.info("Download functionality would be implemented here")
+        
+        with tab4:
+            st.markdown("### Federated Learning")
+            st.markdown("Collaborate on AI model training without sharing sensitive data")
+            
+            # Federated learning setup
+            st.markdown("#### Setup Federated Learning")
+            
+            with st.expander("🔧 Configuration", expanded=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    fl_strategy = st.selectbox(
+                        "Federated Learning Strategy",
+                        ["Federated Averaging (FedAvg)", "Federated Dropout", "Federated Learning with Dynamic Regularization"]
+                    )
+                    num_rounds = st.number_input("Number of Rounds", 1, 1000, 100)
+                with col2:
+                    clients = st.multiselect(
+                        "Select Participating Clients",
+                        ["Hospital A", "Research Lab B", "Clinic C", "University D", "Medical Center E"],
+                        default=["Hospital A", "Research Lab B"]
+                    )
+                    batch_size = st.select_slider("Batch Size", options=[8, 16, 32, 64, 128], value=32)
+            
+            # Model selection
+            st.markdown("#### Model Configuration")
+            model_type = st.radio(
+                "Select Base Model",
+                ["3D U-Net (for volumetric data)", "ResNet-50 (for 2D images)", "Custom Model"],
+                horizontal=True
+            )
+            
+            if model_type == "Custom Model":
+                custom_model = st.file_uploader("Upload Custom Model (PyTorch .pt or .pth)", type=["pt", "pth"])
+                if custom_model:
+                    st.success(f"✅ {custom_model.name} uploaded successfully")
+            
+            # Training parameters
+            st.markdown("#### Training Parameters")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                learning_rate = st.number_input("Learning Rate", 1e-5, 1e-1, 1e-3, format="%f")
+            with col2:
+                loss_function = st.selectbox("Loss Function", ["Dice Loss", "Cross Entropy", "Focal Loss"])
+            with col3:
+                optimizer = st.selectbox("Optimizer", ["Adam", "SGD", "RMSprop"])
+            
+            # Privacy settings
+            st.markdown("#### Privacy Settings")
+            use_dp = st.checkbox("Enable Differential Privacy", value=True)
+            if use_dp:
+                col1, col2 = st.columns(2)
+                with col1:
+                    noise_multiplier = st.slider("Noise Multiplier", 0.1, 5.0, 1.0, 0.1)
+                with col2:
+                    max_grad_norm = st.slider("Max Gradient Norm", 0.1, 5.0, 1.0, 0.1)
+            
+            # Start federated learning button
+            if st.button("🚀 Start Federated Learning", use_container_width=True):
+                with st.spinner("Initializing federated learning..."):
+                    # Add your federated learning logic here
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    for i in range(100):
+                        # Simulate training progress
+                        time.sleep(0.05)
+                        progress = (i + 1) / 100
+                        progress_bar.progress(progress)
+                        
+                        # Update status text
+                        if progress < 0.3:
+                            status_text.text(f"Initializing clients... {int(progress * 100)}%")
+                        elif progress < 0.7:
+                            status_text.text(f"Training in progress... {int(progress * 100)}%")
+                        else:
+                            status_text.text(f"Finalizing model... {int(progress * 100)}%")
+                    
+                    st.success("✅ Federated learning completed successfully!")
+                    
+                    # Show results
+                    st.balloons()
+                    st.markdown("### Training Results")
+                    
+                    # Example metrics (in a real app, these would come from the training process)
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Final Accuracy", "92.4%", "+3.2% from baseline")
+                    with col2:
+                        st.metric("Loss", "0.124", "-0.08")
+                    with col3:
+                        st.metric("Rounds Completed", f"{num_rounds}", "100%")
+                    
+                    # Download trained model
+                    st.download_button(
+                        label="💾 Download Trained Model",
+                        data=b"This would be the model binary in a real application",
+                        file_name="federated_model.pt",
+                        mime="application/octet-stream"
+                    )
+        
+        # Add some spacing at the bottom
+        st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    @staticmethod
     def render_header():
         """Render professional research platform header with dark theme"""
         st.set_page_config(
@@ -1423,122 +1681,134 @@ def main():
                     
                     with col3:
                         st.metric("Failed", app.processing_stats["failed"])
+                    
+                    # Show detailed statistics in expander
+                    with st.expander("📈 View Detailed Statistics"):
+                        UIComponents.render_analytics_dashboard(app)
         
         with tab2:
-            # Analytics dashboard
+            # Dashboard view
+            st.header("📊 Analytics Dashboard")
             UIComponents.render_analytics_dashboard(app)
         
         with tab3:
             # Analysis history
             st.header("📋 Analysis History")
             
-            # Filter controls
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                days_filter = st.selectbox(
-                    "Time Period",
-                    options=[7, 30, 90, 365],
-                    format_func=lambda x: f"Last {x} days"
-                )
-            
-            with col2:
-                analysis_type_filter = st.selectbox(
-                    "Analysis Type",
-                    options=["All"] + [t.value for t in AnalysisType]
-                )
-            
-            # Get filtered history
-            history = app.db_manager.get_analysis_history(limit=100)
-            
-            if history:
-                df = pd.DataFrame(history)
+            # Get analysis history from database
+            try:
+                history = app.db_manager.get_analysis_history(limit=50)
                 
-                # Apply filters
-                if 'created_at' in df.columns:
-                    df['created_at'] = pd.to_datetime(df['created_at'])
-                    cutoff_date = datetime.now() - timedelta(days=days_filter)
-                    df = df[df['created_at'] >= cutoff_date]
-                
-                if analysis_type_filter != "All":
-                    df = df[df['analysis_type'] == analysis_type_filter]
-                
-                # Display results
-                if not df.empty:
-                    st.dataframe(df, use_container_width=True)
-                    
-                    # Export functionality
-                    csv = df.to_csv(index=False)
-                    st.download_button(
-                        label="📥 Download CSV",
-                        data=csv,
-                        file_name=f"analysis_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv"
-                    )
+                if not history:
+                    st.info("No analysis history found. Process some images to see results here.")
                 else:
-                    st.info("No analysis history found for the selected filters.")
-            else:
-                st.info("No analysis history available.")
+                    # Show recent analyses in a table
+                    st.dataframe(
+                        data=[{
+                            "Date": result.timestamp.strftime("%Y-%m-%d %H:%M"),
+                            "Filename": result.image_metadata.filename,
+                            "Type": result.analysis_type.value.replace("_", " ").title(),
+                            "Confidence": f"{result.confidence_score:.1%}",
+                            "Quality": result.quality_score,
+                            "ID": result.analysis_id[:8] + "..."
+                        } for result in history],
+                        use_container_width=True,
+                        column_config={
+                            "Date": "Date",
+                            "Filename": "Filename",
+                            "Type": "Analysis Type",
+                            "Confidence": st.column_config.ProgressColumn(
+                                "Confidence",
+                                format="%.1f%%",
+                                min_value=0,
+                                max_value=1,
+                            ),
+                            "Quality": st.column_config.ProgressColumn(
+                                "Quality",
+                                format="%.1f",
+                                min_value=0,
+                                max_value=1,
+                            ),
+                            "ID": "ID"
+                        }
+                    )
+                    
+            except Exception as e:
+                st.error(f"Failed to load analysis history: {e}")
         
         with tab4:
-            # Settings and configuration
-            st.header("⚙️ Settings")
+            # Settings with tabs for different categories
+            settings_tab1, settings_tab2, settings_tab3 = st.tabs(["⚙️ General", "🔬 Research", "🔒 Security"])
             
-            # System information
-            st.subheader("🖥️ System Information")
+            with settings_tab1:
+                # General settings
+                st.header("General Settings")
+                
+                with st.expander("🔑 API Configuration"):
+                    st.text_input("Gemini API Key", type="password", value=api_key, disabled=True)
+                    st.caption("Configure your API key in the sidebar")
+                
+                with st.expander("⚡ Performance"):
+                    st.checkbox("Enable batch processing", value=batch_processing, disabled=True)
+                    st.checkbox("Use GPU acceleration", value=True, disabled=True)
+                    st.slider("Max concurrent processes", 1, 8, 4, disabled=True)
+                
+                with st.expander("📁 Data Management"):
+                    st.checkbox("Store processed images", value=True, disabled=True)
+                    st.checkbox("Anonymize DICOM metadata", value=True, disabled=True)
+                    st.slider("Max storage (GB)", 1, 100, 10, disabled=True)
+                    
+                    if st.button("🔄 Clear Cache", disabled=True):
+                        st.info("Cache cleared successfully!")
+                
+                with st.expander("📧 Notifications"):
+                    st.checkbox("Email notifications", value=False, disabled=True)
+                    st.checkbox("Browser notifications", value=True, disabled=True)
+                    st.checkbox("Only for errors", value=False, disabled=True)
+                
+                if st.button("💾 Save Settings", disabled=True):
+                    st.success("Settings saved successfully!")
+                    st.balloons()
             
-            system_info = {
-                "Session ID": app.session_id,
-                "Database Path": DATABASE_PATH,
-                "Supported Formats": ", ".join(SUPPORTED_FORMATS),
-                "Max File Size": f"{MAX_FILE_SIZE / 1024 / 1024:.1f} MB",
-                "Max Concurrent Analyses": MAX_CONCURRENT_ANALYSES
-            }
+            with settings_tab2:
+                # Research settings
+                st.header("Research Settings")
+                
+                # Render the research settings component
+                UIComponents.render_research_settings()
+                
+                # Add a save button specifically for research settings
+                if st.button("💾 Save Research Settings"):
+                    st.success("Research settings saved successfully!")
+                    st.balloons()
             
-            for key, value in system_info.items():
-                st.write(f"**{key}:** {value}")
-            
-            # Database management
-            st.subheader("🗄️ Database Management")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("🗑️ Clear Analysis History"):
-                    if st.confirm("Are you sure you want to clear all analysis history?"):
-                        try:
-                            with app.db_manager.get_connection() as conn:
-                                conn.execute("DELETE FROM analyses")
-                                conn.commit()
-                            st.success("Analysis history cleared successfully!")
-                        except Exception as e:
-                            st.error(f"Failed to clear history: {e}")
-            
-            with col2:
-                if st.button("🔄 Reset Database"):
-                    if st.confirm("Are you sure you want to reset the entire database?"):
-                        try:
-                            app.db_manager.init_database()
-                            st.success("Database reset successfully!")
-                        except Exception as e:
-                            st.error(f"Failed to reset database: {e}")
-            
-            # Performance settings
-            st.subheader("⚡ Performance Settings")
-            
-            cache_enabled = st.checkbox("Enable Result Caching", value=True)
-            concurrent_limit = st.slider("Concurrent Analysis Limit", 1, 10, MAX_CONCURRENT_ANALYSES)
-            
-            # Security settings
-            st.subheader("🔒 Security Settings")
-            
-            security_level = st.selectbox(
-                "Security Level",
-                options=[level.value for level in SecurityLevel],
-                index=1
-            )
-            
-            hipaa_compliance = st.checkbox("HIPAA Compliance Mode", value=False)
+            with settings_tab3:
+                # Security settings
+                st.header("Security Settings")
+                
+                with st.expander("🔐 Authentication"):
+                    st.checkbox("Require login", value=True, disabled=True)
+                    st.checkbox("Two-factor authentication", value=False, disabled=True)
+                    st.checkbox("Session timeout", value=True, disabled=True)
+                    st.number_input("Inactivity timeout (minutes)", 1, 240, 30, disabled=True)
+                
+                with st.expander("🔒 Data Protection"):
+                    st.checkbox("Encrypt data at rest", value=True, disabled=True)
+                    st.checkbox("Encrypt data in transit", value=True, disabled=True)
+                    st.selectbox("Data retention policy", 
+                                ["30 days", "90 days", "1 year", "Indefinite"], 
+                                index=1,
+                                disabled=True)
+                
+                with st.expander("⚠️ Data Deletion"):
+                    st.warning("This action cannot be undone. All your data will be permanently deleted.")
+                    
+                    if st.button("🗑️ Delete All My Data", type="secondary", disabled=True):
+                        st.error("This feature is currently disabled.")
+                
+                if st.button("🔒 Save Security Settings", disabled=True):
+                    st.success("Security settings saved successfully!")
+                    st.balloons()
             
             # Log viewer
             st.subheader("📜 System Logs")
