@@ -1255,7 +1255,7 @@ def main():
                         st.markdown(message["content"])
                         # Display images if any
                         for img_data in message.get("images", []):
-                            st.image(img_data, use_column_width=True)
+                            st.image(img_data, use_container_width=True)
                 
                 # Image uploader
                 uploaded_files = st.file_uploader(
@@ -1297,7 +1297,7 @@ def main():
                     cols = st.columns(min(3, len(uploaded_images)))
                     for idx, img in enumerate(uploaded_images):
                         with cols[idx % 3]:
-                            st.image(img, use_column_width=True, caption=f"Image {idx+1}")
+                            st.image(img, use_container_width=True, caption=f"Image {idx+1}")
                 
                 # Chat input
                 if prompt := st.chat_input("Ask me about these images..."):
@@ -1314,7 +1314,7 @@ def main():
                         with st.chat_message("user"):
                             st.markdown(prompt)
                             for img in uploaded_images:
-                                st.image(img, use_column_width=True)
+                                st.image(img, use_container_width=True)
                         
                         # Generate response using Gemini
                         with st.chat_message("assistant"):
