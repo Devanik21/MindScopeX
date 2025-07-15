@@ -751,15 +751,42 @@ class UIComponents:
     
     @staticmethod
     def render_file_uploader():
-        """Render file upload component"""
+        """Render file upload component with sample image option"""
         st.header("📁 Image Upload")
         
+        # Add sample image button
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("🧪 Load Sample Image", help="Load a sample brain MRI image"):
+                try:
+                    # Download sample image from GitHub
+                    sample_image_url = "https://raw.githubusercontent.com/username/repository/main/brain_glioma_0001.jpg"
+                    response = requests.get(sample_image_url, stream=True)
+                    if response.status_code == 200:
+                        # Create a file-like object in memory
+                        image_data = io.BytesIO(response.content)
+                        image_data.name = "brain_glioma_0001.jpg"
+                        
+                        # Store in session state to maintain after rerun
+                        if 'sample_image' not in st.session_state:
+                            st.session_state.sample_image = image_data
+                        st.rerun()
+                    else:
+                        st.error("Failed to load sample image. Please try again.")
+                except Exception as e:
+                    st.error(f"Error loading sample image: {e}")
+        
+        # File uploader
         uploaded_files = st.file_uploader(
-            "Upload Medical Images",
+            "Or upload your own medical images",
             type=SUPPORTED_FORMATS,
             accept_multiple_files=True,
             help=f"Supported formats: {', '.join([f.upper() for f in SUPPORTED_FORMATS])}"
         )
+        
+        # Use sample image if available and no files uploaded
+        if 'sample_image' in st.session_state and not uploaded_files:
+            uploaded_files = [st.session_state.sample_image]
         
         if uploaded_files:
             st.success(f"✅ {len(uploaded_files)} file(s) uploaded successfully")
