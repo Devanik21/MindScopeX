@@ -759,24 +759,20 @@ class UIComponents:
         col1, col2 = st.columns([3, 1])
         with col2:
             if st.button("🧪 Load Sample Image", help="Load a sample brain MRI image"):
+                # Load sample image from local path
                 try:
-                    # Download sample image from GitHub
-                    sample_image_url = "https://raw.githubusercontent.com/debnathsujoy00/Medical-Image-Analysis/main/brain_glioma_0001.jpg"
-                    response = requests.get(sample_image_url, stream=True)
-                    if response.status_code == 200:
-                        # Create a file-like object in memory
-                        image_data = io.BytesIO(response.content)
+                    with open('brain_glioma_0001.jpg', 'rb') as f:
+                        image_data = io.BytesIO(f.read())
                         image_data.name = "brain_glioma_0001.jpg"
                         
                         # Store in session state to maintain after rerun
                         if 'sample_image' not in st.session_state:
                             st.session_state.sample_image = image_data
                         st.rerun()
-                    else:
-                        st.error("Failed to load sample image. Please try again.")
+                except FileNotFoundError:
+                    st.error("Sample image not found. Please make sure 'brain_glioma_0001.jpg' is in the same directory as this script.")
                 except Exception as e:
-                    st.error(f"Error loading sample image: {e}")
-        
+                    st.error(f"Error loading sample image: {e}")        
         # File uploader
         uploaded_files = st.file_uploader(
             "Or upload your own medical images",
