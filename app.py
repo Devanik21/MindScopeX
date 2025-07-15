@@ -729,6 +729,65 @@ class UIComponents:
                         st.write(f"**Type:** {file.type}")
         
         return uploaded_files
+        
+    @staticmethod
+    def render_analysis_results(results: List[Tuple[Optional[AnalysisResult], Optional[str]]]):
+        """Render analysis results in a clean and organized manner"""
+        st.header("📊 Analysis Results")
+        
+        if not results:
+            st.info("No analysis results to display.")
+            return
+            
+        for i, (result, error) in enumerate(results):
+            if error:
+                st.error(f"❌ Analysis {i+1} failed: {error}")
+                continue
+                
+            if not result:
+                st.warning(f"⚠️ Analysis {i+1} returned no results")
+                continue
+                
+            with st.expander(f"🔍 Analysis {i+1}: {result.image_metadata.filename}", expanded=True):
+                # Basic info in columns
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Confidence", f"{result.confidence_score:.1%}")
+                    
+                with col2:
+                    st.metric("Quality", f"{result.quality_score:.1f}/1.0")
+                    
+                with col3:
+                    st.metric("Processing Time", f"{result.processing_time:.2f}s")
+                    
+                with col4:
+                    st.metric("Type", result.analysis_type.value.replace('_', ' ').title())
+                
+                # Display findings
+                st.subheader("🔬 Key Findings")
+                if isinstance(result.findings, dict):
+                    for key, value in result.findings.items():
+                        if key != 'raw_response':  # Skip raw response if present
+                            st.write(f"**{key.replace('_', ' ').title()}:** {value}")
+                
+                # Display recommendations if available
+                if hasattr(result, 'recommendations') and result.recommendations:
+                    st.subheader("💡 Recommendations")
+                    for rec in result.recommendations:
+                        st.write(f"• {rec}")
+                
+                # Technical details in expandable section
+                with st.expander("🔧 Technical Details"):
+                    st.json({
+                        "analysis_id": result.analysis_id,
+                        "image_metadata": asdict(result.image_metadata),
+                        "processing_stats": {
+                            "processing_time": result.processing_time,
+                            "quality_score": result.quality_score,
+                            "confidence_score": result.confidence_score
+                        }
+                    })
     
     @staticmethod
     def render_ai_assistant():
