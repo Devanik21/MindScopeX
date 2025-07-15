@@ -761,7 +761,7 @@ class UIComponents:
             if st.button("🧪 Load Sample Image", help="Load a sample brain MRI image"):
                 try:
                     # Download sample image from GitHub
-                    sample_image_url = "https://raw.githubusercontent.com/username/repository/main/brain_glioma_0001.jpg"
+                    sample_image_url = "https://raw.githubusercontent.com/debnathsujoy00/Medical-Image-Analysis/main/brain_glioma_0001.jpg"
                     response = requests.get(sample_image_url, stream=True)
                     if response.status_code == 200:
                         # Create a file-like object in memory
