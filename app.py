@@ -1667,25 +1667,134 @@ def main():
                 except Exception as e:
                     st.error(f"Failed to generate report: {e}")
         
+        # Initialize session state for settings if not exists
+        if 'settings' not in st.session_state:
+            st.session_state.settings = {
+                'theme': 'System Default',
+                'language': 'English',
+                'cache_enabled': True,
+                'max_workers': 4,
+                'image_quality': 'High',
+                'log_level': 'WARNING',
+                'notify_email': False,
+                'email_address': '',
+                'auto_save': True,
+                'retention_days': 30
+            }
+        
         with tab9:  # Settings Tab
             st.header("⚙️ Application Settings")
             
             # Application Settings
             st.subheader("🛠️ General Settings")
             
-            # Theme selection
-            theme = st.selectbox(
+            # Theme selection with immediate effect
+            new_theme = st.selectbox(
                 "Color Theme",
                 ["Light", "Dark", "System Default"],
-                index=2
+                index=["Light", "Dark", "System Default"].index(st.session_state.settings['theme'])
             )
             
-            # Language selection
-            language = st.selectbox(
+            # Apply theme immediately when changed
+            if new_theme != st.session_state.settings['theme']:
+                st.session_state.settings['theme'] = new_theme
+                
+                # Apply theme using custom CSS
+                if new_theme == 'Dark':
+                    st.markdown("""
+                    <style>
+                        .stApp {
+                            background-color: #0E1117;
+                            color: #FAFAFA;
+                        }
+                        .stTextInput > div > div > input,
+                        .stTextArea > div > div > textarea,
+                        .stSelectbox > div > div > div {
+                            background-color: #1E1E1E !important;
+                            color: #FAFAFA !important;
+                        }
+                    </style>
+                    """, unsafe_allow_html=True)
+                elif new_theme == 'Light':
+                    st.markdown("""
+                    <style>
+                        .stApp {
+                            background-color: #FFFFFF;
+                            color: #31333F;
+                        }
+                    </style>
+                    """, unsafe_allow_html=True)
+                else:  # System Default
+                    st.markdown("<style>.stApp {}</style>", unsafe_allow_html=True)
+                
+                st.rerun()
+            
+            # Language selection with translation function
+            def translate_text(text, target_lang):
+                """Simple translation function - in production, use a proper translation service"""
+                translations = {
+                    'English': {
+                        'Application Settings': 'Application Settings',
+                        'General Settings': 'General Settings',
+                        'Performance': 'Performance',
+                        'Notifications': 'Notifications',
+                        'Data Management': 'Data Management',
+                        'Reset Settings': 'Reset Settings',
+                        'Save Settings': 'Save Settings',
+                    },
+                    'French': {
+                        'Application Settings': 'Paramètres de l\'application',
+                        'General Settings': 'Paramètres généraux',
+                        'Performance': 'Performance',
+                        'Notifications': 'Notifications',
+                        'Data Management': 'Gestion des données',
+                        'Reset Settings': 'Réinitialiser les paramètres',
+                        'Save Settings': 'Enregistrer les paramètres',
+                    },
+                    'Spanish': {
+                        'Application Settings': 'Configuración de la aplicación',
+                        'General Settings': 'Configuración general',
+                        'Performance': 'Rendimiento',
+                        'Notifications': 'Notificaciones',
+                        'Data Management': 'Gestión de datos',
+                        'Reset Settings': 'Restablecer configuración',
+                        'Save Settings': 'Guardar configuración',
+                    },
+                    'German': {
+                        'Application Settings': 'Anwendungseinstellungen',
+                        'General Settings': 'Allgemeine Einstellungen',
+                        'Performance': 'Leistung',
+                        'Notifications': 'Benachrichtigungen',
+                        'Data Management': 'Datenverwaltung',
+                        'Reset Settings': 'Einstellungen zurücksetzen',
+                        'Save Settings': 'Einstellungen speichern',
+                    },
+                    'Chinese': {
+                        'Application Settings': '应用程序设置',
+                        'General Settings': '通用设置',
+                        'Performance': '性能',
+                        'Notifications': '通知',
+                        'Data Management': '数据管理',
+                        'Reset Settings': '重置设置',
+                        'Save Settings': '保存设置',
+                    }
+                }
+                
+                return translations.get(target_lang, {}).get(text, text)
+            
+            # Update language in session state
+            current_language = st.selectbox(
                 "Language",
                 ["English", "Spanish", "French", "German", "Chinese"],
-                index=0
+                index=["English", "Spanish", "French", "German", "Chinese"].index(st.session_state.settings['language'])
             )
+            
+            if current_language != st.session_state.settings['language']:
+                st.session_state.settings['language'] = current_language
+                st.rerun()
+                
+            # Apply translations
+            _ = lambda text: translate_text(text, st.session_state.settings['language'])
             
             # Performance settings
             st.subheader("⚡ Performance")
