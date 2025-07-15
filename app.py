@@ -955,11 +955,12 @@ def main():
             st.divider()
             
             st.subheader("Analysis Settings")
-            analysis_type = st.selectbox(
+            analysis_type_str = st.selectbox(
                 "Analysis Type",
                 [t.value for t in AnalysisType],
                 format_func=lambda x: x.replace('_', ' ').title()
             )
+            analysis_type = AnalysisType(analysis_type_str)  # Convert string back to enum
             
             batch_processing = st.toggle("Enable Batch Processing", value=True,
                                        help="Process multiple images simultaneously")
@@ -1035,7 +1036,7 @@ def main():
                         status_text.text("Processing images in batch mode...")
                         
                         try:
-                            results = app.batch_process_images(image_data_list, analysis_type)
+                            results = app.batch_process_images(image_data_list, AnalysisType(analysis_type))
                             progress_bar.progress(100)
                             status_text.text("✅ Batch processing completed!")
                             
@@ -1050,7 +1051,7 @@ def main():
                             status_text.text(f"Processing {filename}...")
                             
                             try:
-                                result = app.process_image(image_data, filename, analysis_type)
+                                result = app.process_image(image_data, filename, AnalysisType(analysis_type))
                                 results.append((result, None))
                                 
                             except Exception as e:
@@ -1698,4 +1699,3 @@ def safe_main():
 
 if __name__ == "__main__":
     safe_main()
-
