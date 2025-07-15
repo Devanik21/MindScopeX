@@ -703,6 +703,34 @@ class UIComponents:
         st.title("🧠 Advanced Medical Image Analytics Platform")
         
     @staticmethod
+    def render_file_uploader():
+        """Render file upload component"""
+        st.header("📁 Image Upload")
+        
+        uploaded_files = st.file_uploader(
+            "Upload Medical Images",
+            type=SUPPORTED_FORMATS,
+            accept_multiple_files=True,
+            help=f"Supported formats: {', '.join([f.upper() for f in SUPPORTED_FORMATS])}"
+        )
+        
+        if uploaded_files:
+            st.success(f"✅ {len(uploaded_files)} file(s) uploaded successfully")
+            
+            # Display file information
+            with st.expander("📋 File Information"):
+                for file in uploaded_files:
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.write(f"**Name:** {file.name}")
+                    with col2:
+                        st.write(f"**Size:** {file.size / 1024:.1f} KB")
+                    with col3:
+                        st.write(f"**Type:** {file.type}")
+        
+        return uploaded_files
+    
+    @staticmethod
     def render_ai_assistant():
         """Render AI Assistant interface with memory"""
         st.title("🧠 AI Assistant")
