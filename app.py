@@ -13,6 +13,7 @@ License: MIT
 
 import streamlit as st
 import google.generativeai as genai
+import requests
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import io
 import json
