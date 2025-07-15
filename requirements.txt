@@ -5,6 +5,5 @@ numpy
 pandas
 pyopengl
 plotly
-skimage
 opencv-python-headless
 pydicom
