@@ -795,9 +795,13 @@ class UIComponents:
                     with col1:
                         st.write(f"**Name:** {file.name}")
                     with col2:
-                        st.write(f"**Size:** {file.size / 1024:.1f} KB")
+                        # Handle both uploaded files (which have size) and BytesIO objects (which don't)
+                        file_size = len(file.getvalue()) if hasattr(file, 'getvalue') else file.size
+                        st.write(f"**Size:** {file_size / 1024:.1f} KB")
                     with col3:
-                        st.write(f"**Type:** {file.type}")
+                        # Handle both uploaded files and BytesIO objects
+                        file_type = file.type if hasattr(file, 'type') else 'image/jpeg'  # Default to jpeg for sample image
+                        st.write(f"**Type:** {file_type}")
         
         return uploaded_files
     
