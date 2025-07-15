@@ -1667,6 +1667,106 @@ def main():
                 except Exception as e:
                     st.error(f"Failed to generate report: {e}")
         
+        with tab9:  # Settings Tab
+            st.header("⚙️ Application Settings")
+            
+            # Application Settings
+            st.subheader("🛠️ General Settings")
+            
+            # Theme selection
+            theme = st.selectbox(
+                "Color Theme",
+                ["Light", "Dark", "System Default"],
+                index=2
+            )
+            
+            # Language selection
+            language = st.selectbox(
+                "Language",
+                ["English", "Spanish", "French", "German", "Chinese"],
+                index=0
+            )
+            
+            # Performance settings
+            st.subheader("⚡ Performance")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                cache_enabled = st.toggle(
+                    "Enable Caching",
+                    value=True,
+                    help="Improve performance by caching analysis results"
+                )
+                
+                max_workers = st.slider(
+                    "Max Concurrent Processes",
+                    min_value=1,
+                    max_value=10,
+                    value=4,
+                    help="Number of parallel processes for batch operations"
+                )
+            
+            with col2:
+                image_quality = st.select_slider(
+                    "Image Quality",
+                    options=["Low", "Medium", "High", "Original"],
+                    value="High",
+                    help="Adjust image quality for processing"
+                )
+                
+                log_level = st.selectbox(
+                    "Logging Level",
+                    ["ERROR", "WARNING", "INFO", "DEBUG"],
+                    index=1,
+                    help="Set the verbosity of application logs"
+                )
+            
+            # Notification settings
+            st.subheader("🔔 Notifications")
+            
+            notify_email = st.checkbox(
+                "Email Notifications",
+                value=False,
+                help="Receive email notifications for completed analyses"
+            )
+            
+            if notify_email:
+                email_address = st.text_input(
+                    "Email Address",
+                    placeholder="your.email@example.com",
+                    help="Email address to receive notifications"
+                )
+            
+            # Data management
+            st.subheader("💾 Data Management")
+            
+            auto_save = st.checkbox(
+                "Auto-save Results",
+                value=True,
+                help="Automatically save analysis results"
+            )
+            
+            retention_days = st.slider(
+                "Retention Period (days)",
+                min_value=1,
+                max_value=365,
+                value=30,
+                help="How long to keep analysis results"
+            )
+            
+            # Reset to defaults
+            st.subheader("🔄 Reset Settings")
+            
+            if st.button("Reset to Defaults", type="secondary"):
+                st.session_state.clear()
+                st.rerun()
+            
+            # Save settings button
+            if st.button("💾 Save Settings", type="primary"):
+                # In a real app, you would save these settings to a config file or database
+                st.success("Settings saved successfully!")
+        
         # Footer
         st.markdown("---")
         st.markdown("""
