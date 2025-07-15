@@ -18,6 +18,7 @@ import io
 import json
 import logging
 import traceback
+import inspect
 import time
 import hashlib
 import base64
@@ -33,6 +34,7 @@ from enum import Enum
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+from skimage.measure import regionprops
 import cv2
 import pydicom
 from contextlib import contextmanager
@@ -44,7 +46,11 @@ import asyncio
 from functools import wraps, lru_cache
 import warnings
 warnings.filterwarnings('ignore')
-
+try:
+    from IPython.display import display, Image
+except ImportError:
+    pass
+from sklearn.model_selection import train_test_split
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -55,7 +61,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
+#
 # Constants
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 SUPPORTED_FORMATS = ['jpg', 'jpeg', 'png', 'tiff', 'bmp', 'dcm']
@@ -105,6 +111,7 @@ class AnalysisResult:
     recommendations: List[str]
     processing_time: float
     quality_score: float
+    segmentation_mask: Optional[str] = None  # Base64 encoded mask
     
 @dataclass
 class ProcessingStats:
@@ -146,6 +153,12 @@ class SecurityValidator:
             return False
         # Add more sophisticated validation
         return True
+    
+    @staticmethod
+    def validate_user_role(user_role: str, required_role: str) -> bool:
+        """Validate user role against required role"""
+        # Implement role-based access control logic
+        return user_role == required_role or user_role == 'admin'
     
     @staticmethod
     def sanitize_filename(filename: str) -> str:
@@ -236,7 +249,8 @@ class DatabaseManager:
                         id, image_metadata, analysis_type, confidence_score,
                         findings, recommendations, processing_time, quality_score
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
+                ''', 
+                (
                     result.analysis_id,
                     json.dumps(asdict(result.image_metadata), default=str),
                     result.analysis_type.value,
@@ -305,6 +319,9 @@ class ImageProcessor:
                 return False, f"Unsupported format. Supported: {', '.join(self.supported_formats)}"
             
             # Try to open image
+            if file_ext == 'dcm':
+                # Handle DICOM separately
+                return self._validate_dicom(image_data)
             image = Image.open(io.BytesIO(image_data))
             
             # Check dimensions
@@ -321,7 +338,28 @@ class ImageProcessor:
             
         except Exception as e:
             return False, f"Invalid image: {str(e)}"
-    
+        
+    def _validate_dicom(self, image_data: bytes) -> Tuple[bool, str]:
+        """Validate DICOM image"""
+        try:
+            dicom_data = pydicom.dcmread(io.BytesIO(image_data))
+            
+            # Check if pixel data is present
+            if 'PixelData' not in dicom_data:
+                return False, "DICOM file does not contain pixel data"
+            
+            # Check image dimensions
+            rows, cols = dicom_data.Rows, dicom_data.Columns
+            if rows < 64 or cols < 64:
+                return False, "DICOM image too small. Minimum size: 64x64 pixels"
+            if rows > 4096 or cols > 4096:
+                return False, "DICOM image too large. Maximum size: 4096x4096 pixels"
+            
+            return True, "Valid DICOM image"
+            
+        except Exception as e:
+            return False, f"Invalid DICOM image: {str(e)}"
+        
     def enhance_medical_image(self, image: Image.Image) -> Image.Image:
         """Apply medical image enhancements"""
         try:
@@ -346,7 +384,6 @@ class ImageProcessor:
         except Exception as e:
             logger.error(f"Image enhancement failed: {e}")
             return image
-    
     def extract_metadata(self, image_data: bytes, filename: str) -> ImageMetadata:
         """Extract comprehensive image metadata"""
         try:
@@ -416,7 +453,54 @@ class ImageProcessor:
         except Exception as e:
             logger.error(f"Quality assessment failed: {e}")
             return 0.5, ImageQuality.FAIR
+    def segment_image(self, image: Image.Image) -> Optional[np.ndarray]:
+        """Segment image to identify regions of interest"""
+        try:
+            # Convert to numpy array and grayscale
+            img_array = np.array(image)
+            if len(img_array.shape) == 3:
+                gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+            else:
+                gray = img_array
 
+            # Apply Gaussian blur to reduce noise
+            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+            # Adaptive thresholding for better handling of varying illumination
+            thresh = cv2.adaptiveThreshold(
+                blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY_INV, 11, 2
+            )
+
+            # Morphological operations to clean up the mask
+            kernel = np.ones((3, 3), np.uint8)
+            opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+            closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+            # Label connected components
+            num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(closing, connectivity=8)
+
+            # Filter out small regions (noise)
+            min_size = 500  # Adjust this based on your image characteristics
+            mask = np.zeros_like(gray, dtype=np.uint8)
+            for i in range(1, num_labels):
+                if stats[i, cv2.CC_STAT_AREA] >= min_size:
+                    mask[labels == i] = 255
+
+            # Convert mask to boolean array (True for ROI, False for background)
+            mask = mask > 0
+
+            # Return the segmentation mask
+            return mask
+
+        except Exception as e:
+            logger.error(f"Segmentation failed: {e}")
+            return None
+
+    def overlay_mask_on_image(self, image: Image.Image, mask: np.ndarray, color=(255, 0, 0), alpha=0.5) -> Image.Image:
+        """Overlay segmentation mask on the original image"""
+        # Implement overlay logic here...
+        return image  # Placeholder for now
 # AI Analysis Engine
 class AIAnalysisEngine:
     """Advanced AI analysis using Google Gemini"""
@@ -436,6 +520,32 @@ class AIAnalysisEngine:
             logger.error(f"Model initialization failed: {e}")
             raise AIAnalysisError(f"Failed to initialize AI model: {e}")
     
+    def fine_tune_model(self, training_data: List[Tuple[Image.Image, Dict]], epochs: int = 10) -> bool:
+        """Fine-tune the AI model with expert-labeled data"""
+        try:
+            # Check if training data is valid
+            if not training_data or not all(isinstance(item, tuple) and len(item) == 2 for item in training_data):
+                raise ValueError("Invalid training data format")
+
+            # Prepare data for fine-tuning (this is a simplified example)
+            images, labels = zip(*training_data)
+
+            # In a real scenario, you'd need to:
+            # 1. Convert images and labels to a format suitable for the Gemini API
+            # 2. Use the Gemini fine-tuning API (if available)
+            # 3. Monitor the training progress
+            # 4. Evaluate the model performance
+
+            logger.info(f"Starting fine-tuning with {len(images)} images for {epochs} epochs")
+            # Simulate training for now
+            time.sleep(5)  # Simulate training time
+
+            logger.info("Fine-tuning completed (simulated)")
+            return True
+
+        except Exception as e:
+            logger.error(f"Fine-tuning failed: {e}")
+            return False
     def analyze_medical_image(self, image: Image.Image, analysis_type: AnalysisType) -> Dict[str, Any]:
         """Perform comprehensive medical image analysis"""
         try:
@@ -500,7 +610,7 @@ class AIAnalysisEngine:
         try:
             # Try to extract JSON from response
             import re
-            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            json_match = re.search(r'\{.*?\}', response_text, re.DOTALL)
             
             if json_match:
                 try:
@@ -614,8 +724,21 @@ class MedicalAnalyticsApp:
             # Extract metadata
             metadata = self.image_processor.extract_metadata(image_data, filename)
             
-            # Process image
-            image = Image.open(io.BytesIO(image_data))
+            # Open image (handle DICOM separately)
+            if metadata.format == 'dcm':
+                dicom_data = pydicom.dcmread(io.BytesIO(image_data))
+                if 'PixelData' in dicom_data:
+                    img_array = dicom_data.pixel_array
+                    # Normalize pixel values if needed
+                    if img_array.max() > 255:
+                        img_array = (img_array / img_array.max() * 255).astype(np.uint8)
+                    if len(img_array.shape) == 2:
+                        img_array = np.stack([img_array] * 3, axis=-1)  # Convert to RGB
+                    image = Image.fromarray(img_array)
+                else:
+                    raise ImageProcessingError("DICOM file does not contain pixel data")
+            else:
+                image = Image.open(io.BytesIO(image_data))
             enhanced_image = self.image_processor.enhance_medical_image(image)
             
             # Assess quality
@@ -625,7 +748,12 @@ class MedicalAnalyticsApp:
             if self.ai_engine:
                 analysis_findings = self.ai_engine.analyze_medical_image(enhanced_image, analysis_type)
             else:
-                raise AIAnalysisError("AI engine not initialized")
+                raise AIAnalysisError("AI engine not initialized.")
+            
+            # Image segmentation
+            segmentation_mask = self.image_processor.segment_image(enhanced_image)
+            segmentation_mask_b64 = self._encode_mask(segmentation_mask) if segmentation_mask is not None else None
+            
             
             # Create result
             processing_time = time.time() - start_time
@@ -638,7 +766,8 @@ class MedicalAnalyticsApp:
                 findings=analysis_findings,
                 recommendations=analysis_findings.get('recommendations', []),
                 processing_time=processing_time,
-                quality_score=quality_score
+                quality_score=quality_score,
+                segmentation_mask=segmentation_mask_b64
             )
             
             # Save to database
@@ -654,6 +783,20 @@ class MedicalAnalyticsApp:
             self.processing_stats["failed"] += 1
             logger.error(f"Image processing failed: {e}")
             raise
+        
+    def _encode_mask(self, mask: np.ndarray) -> str:
+        """Encode segmentation mask as base64 string"""
+        try:
+            # Ensure mask is boolean
+            if mask.dtype != bool:
+                mask = mask > 0
+            # Convert boolean mask to uint8 (0 and 255)
+            mask_uint8 = mask.astype(np.uint8) * 255
+            _, encoded_mask = cv2.imencode('.png', mask_uint8)
+            return base64.b64encode(encoded_mask).decode('utf-8')
+        except Exception as e:
+            logger.error(f"Mask encoding failed: {e}")
+            return ""
     
     def batch_process_images(self, image_files: List[Tuple[bytes, str]], analysis_type: AnalysisType) -> List[Tuple[Optional[AnalysisResult], Optional[str]]]:
         """Process multiple images concurrently"""
@@ -678,7 +821,7 @@ class MedicalAnalyticsApp:
         return results
 
 # Streamlit UI Components
-class UIComponents:
+class UIComponents:   
     """Reusable UI components"""
     
     @staticmethod
@@ -810,7 +953,24 @@ class UIComponents:
                     st.metric("Analysis Type", result.analysis_type.value.replace('_', ' ').title())
                 
                 # Detailed findings
-                st.subheader("🔬 Detailed Findings")
+                st.subheader("🔬 Analysis Details")
+                
+                # Display original and enhanced images side-by-side
+                try:
+                    if result.image_metadata.format == 'dcm':
+                        dicom_data = pydicom.dcmread(io.BytesIO(result.image_data))
+                        if 'PixelData' in dicom_data:
+                            img_array = dicom_data.pixel_array
+                            if img_array.max() > 255:
+                                img_array = (img_array / img_array.max() * 255).astype(np.uint8)
+                            if len(img_array.shape) == 2:
+                                img_array = np.stack([img_array] * 3, axis=-1)
+                            original_image = Image.fromarray(img_array)
+                        else:
+                            raise ValueError
+                except Exception as e:
+                    st.error(f"Error processing DICOM image: {str(e)}")
+                    continue
                 
                 findings = result.findings
                 if isinstance(findings, dict):
@@ -1639,6 +1799,8 @@ def main():
                         st.text_area("Recent Logs", "\n".join(logs), height=300)
                     else:
                         st.info("No log file found.")
+                except Exception as e:
+                    st.error(f"Failed to read logs: {e}")
                 except Exception as e:
                     st.error(f"Failed to read logs: {e}")
             
